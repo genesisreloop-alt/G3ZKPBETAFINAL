@@ -1,0 +1,60 @@
+
+import { create } from 'zustand';
+import { PhiPiStore } from '../types/phiPiTypes';
+
+const PHI = 1.618033988749895;
+const PI = 3.141592653589793;
+
+export const usePhiPiStore = create<PhiPiStore>((set) => ({
+  phi: PHI,
+  pi: PI,
+  phiStepMultiplier: 0.5,
+  piPrecisionThreshold: 0.00015,
+  maxSteps: 400,
+  maxDistance: 100.0,
+  depthScale: 1.5,
+  metricExtension: 2.0, 
+  eigenValue: 2.618,
+  zkpProofConsistency: 1.0, // Default to full reality coherence
+  resolution: { x: window.innerWidth, y: window.innerHeight },
+  time: 0,
+  cameraPosition: [0, 0, 8],
+  mouse: [0, 0],
+  showPhiSteps: false,
+  showDistanceField: false,
+  showNormals: false,
+  showBlade: false,
+  showStepDepth: false,
+  bladeDepthDebug: 0.0,
+  performance: {
+    fps: 0,
+    frameTime: 0,
+    stepCount: 0,
+  },
+  activeAssetType: null,
+  assetUrl: null,
+  assetTexture: null,
+
+  setPhi: (phi) => set({ phi }),
+  setPi: (pi) => set({ pi }),
+  setPhiStepMultiplier: (phiStepMultiplier) => set({ phiStepMultiplier }),
+  setPiPrecisionThreshold: (piPrecisionThreshold) => set({ piPrecisionThreshold }),
+  setMaxSteps: (maxSteps) => set({ maxSteps }),
+  setDepthScale: (depthScale) => set({ depthScale }),
+  setMetricExtension: (metricExtension) => set({ metricExtension }),
+  setEigenValue: (eigenValue) => set({ eigenValue }),
+  setZkpProofConsistency: (zkpProofConsistency) => set({ zkpProofConsistency }),
+  setBladeDepthDebug: (bladeDepthDebug) => set({ bladeDepthDebug }),
+  updateTime: (dt) => set((state) => ({ time: state.time + dt })),
+  setMouse: (x, y) => set({ mouse: [x, y] }),
+  toggleDebug: (key) => set((state) => ({ [key]: !state[key] } as any)),
+  setCameraPosition: (cameraPosition) => set({ cameraPosition }),
+  updatePerformance: (performance) => set({ performance }),
+  setAsset: (type, url = null) => set((state) => {
+    if (state.assetUrl && state.assetUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(state.assetUrl);
+    }
+    return { activeAssetType: type, assetUrl: url };
+  }),
+  setAssetTexture: (assetTexture) => set({ assetTexture }),
+}));

@@ -1,0 +1,70 @@
+PHASE 1: Media Upload & Manifold 3D Object Creation
+Leveraging the existing tensor/geometric algebra pipeline
+
+Task	Description
+1.1	Enhanced Media Upload UI - Add dedicated upload panel for images/videos with preview thumbnails, file type validation, and upload progress
+1.2	Manifold Conversion Toggle - When uploading, user can toggle "Convert to Manifold Image" which triggers the tensor field processing pipeline
+1.3	3D Object Exporter - Export the generated volumetric manifold as a downloadable 3D format (glTF/GLB) that preserves the φ/π tensor data
+1.4	Manifold Preview Panel - Real-time preview of the 3D object before sharing, with slider controls from existing UI
+PHASE 2: P2P Encrypted Mesh Network with ZKP
+Secure sharing infrastructure using cryptographic proofs
+
+Task	Description
+2.1	Mesh Group System - Create/join mesh groups (P2P network of users), store group membership locally
+2.2	WebRTC P2P Layer - Implement peer-to-peer data channels for direct encrypted manifold transfer
+2.3	End-to-End Encryption - AES-256-GCM encryption for all manifold data, with key exchange via ECDH
+2.4	Zero-Knowledge Proof Integration - ZKP verification that proves manifold authenticity without revealing content (leveraging your existing zkpProofConsistency parameter)
+2.5	Mesh Group UI - Interface to manage groups, invite users, and send/receive 3D manifolds
+2.6	Sharing Workflow - Select manifold → Choose recipient(s) in mesh group → Encrypt with ZKP → P2P transfer
+PHASE 3: Real-Time UI Streaming Through 3D Pipeline (Themeable)
+The UI itself becomes the manifold - UI-as-shader
+
+Task	Description
+3.1	Theme System Architecture - Create theme presets that define how the UI renders through the 3D pipeline
+3.2	UI-to-Texture Pipeline - Capture UI elements as texture, feed into raymarching shader for "UI as manifold" effect
+3.3	Real-Time UI Streaming - The control panel and interface elements stream through the tensor coordinate system
+3.4	Theme Selector - Users choose themes that modulate: φ/π base values, color schemes, tensor field behaviors, Flower of Life parameters
+3.5	Shader Uniform Theme Binding - Themes dynamically control shader uniforms for cohesive visual experience
+PHASE 4: UI Modulation via Sliders & Tensor Coordinates
+Full control interface using existing tensor math
+
+Task	Description
+4.1	Enhanced Slider Controls - Expand existing PhiPiUI with tensor-specific sliders (bivector scale, trivector scale, coordinate invariance)
+4.2	Tensor Coordinate Visualizer - Real-time display of current tensor state (rank, invariants, bivector/trivector components)
+4.3	Flower of Life Control Panel - Sliders for generations, rotation, sacred geometry scale, Pi Ray density
+4.4	Modulation Presets - Save/load slider configurations as named presets
+4.5	Live Parameter Binding - All sliders directly modulate the tensor-based raymarching in real-time
+PHASE 5: Integration & Polish
+Task	Description
+5.1	Unified State Management - Extend useTensorStore with all new state for P2P, themes, and mesh groups
+5.2	Database Setup - PostgreSQL for user/group persistence (optional for local-only P2P)
+5.3	Performance Optimization - Leverage existing Flower of Life computational optimization for O(n log n) complexity
+5.4	Error Handling & Validation - Robust error handling for P2P connections, encryption, and file uploads
+5.5	Documentation & User Guide - Update replit.md and create in-app help for new features
+Technical Architecture Summary
+┌─────────────────────────────────────────────────────────────────────┐
+│                          USER INTERFACE                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │ Media Upload│  │ Mesh Groups │  │ Theme Select│  │ Tensor Ctrl │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘ │
+└─────────┼────────────────┼────────────────┼────────────────┼────────┘
+          │                │                │                │
+          ▼                ▼                ▼                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    3D TENSOR PIPELINE (Core Engine)                  │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │  Image/Video → Tensor Field → Geometric Algebra → 3D Manifold  │ │
+│  │     ↓            ↓               ↓                    ↓        │ │
+│  │  AssetProcessor → processImageToTensorField → geometricProduct │ │
+│  │                   → Flower of Life Pi Rays → Raymarching SDF   │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      P2P MESH LAYER (New)                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐   │
+│  │ WebRTC P2P   │  │ E2E Encrypt  │  │ ZKP Proof (zkpConsistency)│  │
+│  │ Data Channel │  │ AES-256-GCM  │  │ Manifold Authenticity    │   │
+│  └──────────────┘  └──────────────┘  └──────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘

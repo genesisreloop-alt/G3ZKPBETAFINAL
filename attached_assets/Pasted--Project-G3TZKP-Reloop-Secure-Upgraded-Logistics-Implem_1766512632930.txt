@@ -1,0 +1,76 @@
+**Project G3TZKP Reloop: Secure & Upgraded Logistics Implementation for Replit AI**
+
+**Core Principle: Upgrade, Don't Overhaul.** Enhance the existing G3TZKP Messenger architecture by adding a secure backend proxy, advanced logistics modules, and comprehensive security layers without rewriting the core application.
+
+**Phase 1: Build the Secure Backend API Proxy (The Invisible Shield)**
+**Objective:** Create a dedicated middleware service that acts as the *only* point of contact between G3TZKP Reloop and the outside world. All external API keys and requests are hidden here.
+*   **Action:** In the existing backend (`/server/` or `/api/`), create a new directory: `/services/proxy/`.
+*   **Implementation (Proxy Service):**
+    1.  **Configuration:** Create `config.js` that loads `MAPBOX_SECRET_KEY`, `OSRM_SERVER_URL` from environment variables. Never hardcode.
+    2.  **Proxy Controller:** Build `proxyController.js` with specific routes:
+        ```javascript
+        // Example: Mapbox Navigation Proxy
+        router.post('/mapbox/navigation', async (req, res) => {
+            const { coordinates, profile } = req.body;
+            const mbRes = await fetch(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}?access_token=${process.env.MAPBOX_SECRET_KEY}&geometries=geojson&steps=true`);
+            const data = await mbRes.json();
+            res.json(data); // Send cleaned response to our frontend
+        });
+        // Add similar routes for OSRM `/table` and `/route`
+        ```
+    3.  **Request Masking:** Implement rotating user-agent headers and request delays to prevent fingerprinting from external services.
+    4.  **Unified Internal API:** The frontend **only** calls routes like `POST /api/proxy/mapbox/navigation`. The external URLs and keys are completely invisible to it.
+
+**Phase 2: Upgrade the Frontend Interface (The Logistics Cockpit)**
+**Objective:** Integrate new logistics components into the current UI, reusing existing styles and layouts.
+*   **Action:** Add new React components to the existing frontend structure.
+*   **Implementation (New Components):**
+    1.  **`<LogisticsLayer />`:** A toggleable overlay for the main map. It manages the display of `FeedstockPartner` points (styled by `CCVS_Score`) and `SynthesisNode` markers.
+    2.  **`<RoutePlannerPanel />`:** A sidebar panel that exists alongside the current chat/message interface. It contains:
+        *   A filterable list of Feedstock Partners from the provided CSV.
+        *   A drag-and-drop "Pickup Queue" to build a mission.
+        *   A button that sends the queue to our new backend endpoint: `POST /api/logistics/optimize`.
+    3.  **`<DriverNavView />`:** A full-screen, simplified view accessible from the main dashboard. It shows:
+        *   A large Mapbox GL map centered on the driver's live location (simulated or from GPS).
+        *   A "Diegetic HUD" overlaid on the map showing: **Next Stop: [Partner Name] | Target Load: [XX] kg | CCVS: ★★★★☆**.
+        *   Button controls: `ARRIVED`, `COLLECTED`, `PROCEED`. These update the backend `RouteWaypoint` status.
+
+**Phase 3: Implement the Navigation & Optimization Engine**
+**Objective:** Make the logistics intelligent and actionable.
+*   **Action:** Create a new backend service for route optimization.
+*   **Implementation (Logistics Engine):**
+    1.  **`POST /api/logistics/optimize` Endpoint:** This is the core logic.
+        *   **Input:** Accepts an array of `target_ids` and a `synthesis_node_id`.
+        *   **Processing:**
+            a.  Fetch coordinates for all points from the database.
+            b.  Call the **OSRM `table` service** (via the proxy) to get a time/distance matrix.
+            c.  Format this matrix and solve the **Vehicle Routing Problem (VRP)** using a lightweight JavaScript solver (e.g., `js-vrp`). The objective: minimize total distance for a single vehicle.
+        *   **Output:** Returns an optimized route as a GeoJSON `LineString` and an ordered list of stops.
+    2.  **Real-Time Tracking:** Create a `PATCH /api/logistics/waypoint/:id/status` endpoint for the driver's view to update progress. Use WebSockets or polling to update the main operator's map with the driver's live position.
+
+**Phase 4: Integrate and Compile ZKP Verification Circuits**
+**Objective:** Add a layer of verifiable, trustless computation for critical claims.
+*   **Action:** Use a ZKP framework (like `circom` with `snarkjs`) to create and compile circuits in a `/circuits/` directory.
+*   **Implementation (ZKP Circuits):**
+    1.  **Circuit 1: `RouteProof.circom`:** Proves that a delivered route is the optimal solution for a given set of waypoints and distance matrix, without revealing the proprietary algorithm.
+    2.  **Circuit 2: `CollectionProof.circom`:** Proves that a driver visited specific GPS coordinates within a defined time window, without revealing their entire travel history.
+    3.  **Compilation & Integration:**
+        ```bash
+        # Replit AI should run these commands to compile circuits
+        circom RouteProof.circom --r1cs --wasm --sym
+        snarkjs groth16 setup RouteProof.r1cs pot12_final.ptau RouteProof.zkey
+        # Generate verification keys and integrate the prover/verifier into the backend API.
+        ```
+
+**Phase 5: Execute a Full Security Audit**
+**Objective:** Identify and remediate vulnerabilities before deployment.
+*   **Action:** Replit AI must perform a systematic audit and output a report.
+*   **Audit Checklist:**
+    1.  **Dependency Scan:** Run `npm audit` and `snyk test` on all packages.
+    2.  **Code Analysis:** Use `eslint` with security plugins to find code vulnerabilities (e.g., `no-eval`, `no-floating-promise`).
+    3.  **Authentication/Authorization Review:** Verify that all API endpoints (especially new `/api/logistics/` and `/api/proxy/`) are protected by the existing session/auth middleware.
+    4.  **Data Validation:** Ensure all proxy and logistics endpoints use strong input validation (e.g., with `zod`) to prevent injection attacks.
+    5.  **Secret Management:** Confirm that no API keys, database credentials, or ZKP proving keys are exposed in logs, errors, or client-side bundles.
+
+**Final Instruction to Replit AI:**
+"Implement the five phases sequentially. Start by building the secure Proxy Service (Phase 1) and integrate it with the existing backend. Then, upgrade the frontend by adding the new logistics components (Phase 2) to the current React tree. Build the optimization engine (Phase 3) next. Finally, set up the ZKP circuit directory and run the security audit (Phases 4 & 5). Prioritize functional integration over perfect code. Update the existing `README.md` with setup instructions for the new proxy and logistics services. All external API calls must terminate at the backend proxy."

@@ -1,0 +1,252 @@
+G3ZKP UI Redesign: Top-Left Control Cluster Specification
+
+For Replit AI Implementation
+
+1. CORRECTED UI LAYOUT: Top-Left Horizontal Cluster
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ TOP-LEFT HORIZONTAL CLUSTER (Fixed, Collapsible)                        │
+│                                                                         │
+│  ┌─────────┐ ┌──────────────────────────────────┐ ┌─────────────────┐  │
+│  │  ≡      │ │ "Search destination..."          │ │  🚗  🚌  🚶     │  │
+│  │ Hamburger│ │ (Auto-complete, recent, saved)  │ │ Car  Transit Walk│  │
+│  │ Menu     │ │                                  │ │                  │  │
+│  └─────────┘ └──────────────────────────────────┘ └─────────────────┘  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+│                                                                         │
+│                           MAP VIEWPORT                                  │
+│                             (Full Bleed)                                │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                                                                   │  │
+│  │                                                                   │  │
+│  │                              MAP                                  │  │
+│  │                      (Leaflet/OpenStreetMap)                      │  │
+│  │                                                                   │  │
+│  │                                                                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  BOTTOM SHEET (Google Maps Style)                                       │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Route Details / Business Info / Transit Options                   │  │
+│  │ (Slides up, occupies 30-50% of screen)                            │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+2. BEHAVIOR STATES: Dynamic Collapsing
+
+State 1: Idle (No Active Navigation)
+
+```
+[≡] [Search destination..._____________________] [🚗 🚌 🚶]
+```
+
+· Full width search bar (60% of top-left cluster)
+· All three transport buttons visible
+· Hamburger menu visible
+
+State 2: Active Navigation
+
+```
+[≡] [↓ To: Destination] [🚗]
+```
+
+· Search bar collapses to show only destination name
+· Only active transport mode shown
+· Becomes 50% narrower than idle state
+
+State 3: Searching
+
+```
+[≡] [Searching...] [🚗 🚌 🚶]
+```
+
+· Search bar maintains full width
+· Shows search results in dropdown below
+· Transport buttons remain visible but non-interactive during search
+
+3. COMPONENT ARCHITECTURE
+
+3.1 Create New Component: TopLeftControlCluster.tsx
+
+Location: g3zkp-messenger/src/components/navigation/TopLeftControlCluster.tsx
+
+```typescript
+interface TopLeftControlClusterProps {
+  isNavigating: boolean;
+  destination?: string;
+  activeTransportMode: 'car' | 'transit' | 'walk';
+  onMenuClick: () => void;
+  onSearchFocus: () => void;
+  onTransportModeChange: (mode: 'car' | 'transit' | 'walk') => void;
+}
+
+// Behavior:
+// - When isNavigating = false: Show full search bar with placeholder
+// - When isNavigating = true: Show collapsed destination display
+// - Transport buttons highlight active mode
+// - Smooth width transition between states
+```
+
+3.2 Update NavigatorMap.tsx Structure
+
+```typescript
+// Updated NavigatorMap.tsx structure:
+const NavigatorMap = () => {
+  return (
+    <div className="relative w-full h-screen">
+      {/* TOP-LEFT CLUSTER */}
+      <TopLeftControlCluster
+        isNavigating={navigationStore.isNavigating}
+        destination={navigationStore.destination?.name}
+        activeTransportMode={navigationStore.transportMode}
+        onMenuClick={() => setShowMenu(true)}
+        onSearchFocus={() => setSearchActive(true)}
+        onTransportModeChange={(mode) => navigationStore.setTransportMode(mode)}
+      />
+      
+      {/* MAP VIEWPORT - Takes remaining space */}
+      <MapViewport />
+      
+      {/* BOTTOM SHEET */}
+      <BottomSheetPanel />
+    </div>
+  );
+};
+```
+
+3.3 Create State Management for Collapsing
+
+Update: g3zkp-messenger/src/stores/navigationStore.ts
+
+```typescript
+interface NavigationStore {
+  isNavigating: boolean;
+  transportMode: 'car' | 'transit' | 'walk';
+  destination: { name: string; coordinates: [number, number] } | null;
+  searchActive: boolean;
+  // New actions:
+  startNavigation: (destination: string, mode: 'car' | 'transit' | 'walk') => void;
+  endNavigation: () => void;
+  setSearchActive: (active: boolean) => void;
+  // ...existing actions
+}
+```
+
+4. SPECIFIC IMPLEMENTATION INSTRUCTIONS FOR REPLIT AI
+
+4.1 Step 1: Project Rename
+
+· Replace ALL instances of "g3tzkp" with "g3zkp"
+· Update repository name and all file references
+· Update package.json name field
+
+4.2 Step 2: Create TopLeftControlCluster Component
+
+Create a new file with:
+
+1. Horizontal flex container (flex-row)
+2. Three children:
+   · Hamburger button (fixed width)
+   · Search/destination display (flex-grow, variable width)
+   · Transport mode buttons (fixed width)
+3. Conditional styling based on isNavigating prop
+4. Smooth CSS transitions for width changes
+
+4.3 Step 3: Update NavigatorMap.tsx
+
+1. Remove existing top bar components
+2. Import and use TopLeftControlCluster
+3. Pass necessary state and callbacks from navigationStore
+
+4.4 Step 4: Update Navigation Store
+
+1. Add isNavigating state
+2. Add actions to toggle navigation state
+3. Ensure transport mode selection updates UI
+
+4.5 Step 5: CSS/Styling
+
+1. Ensure top-left cluster uses fixed positioning
+2. Add z-index to appear above map
+3. Add backdrop blur for glass morphism effect
+4. Ensure dark theme compatibility
+
+5. VISUAL SPECIFICATIONS
+
+5.1 Dimensions
+
+· Height: 60px
+· Idle Width: 70% of viewport width (max 600px)
+· Navigating Width: 50% of viewport width (max 400px)
+· Margin: 20px from top, 20px from left
+
+5.2 Colors (Dark Theme)
+
+· Background: rgba(15, 23, 42, 0.9) // slate-900 with 90% opacity
+· Border: 1px solid rgba(148, 163, 184, 0.2) // slate-400
+· Text: rgb(226, 232, 240) // slate-200
+· Active Transport Button: rgb(94, 234, 212) // teal-300
+
+5.3 Animations
+
+· Width Transition: 300ms ease-in-out
+· Opacity Transition: 150ms ease-in-out
+· Slide-in (Bottom Sheet): 400ms cubic-bezier(0.4, 0, 0.2, 1)
+
+6. TESTING REQUIREMENTS
+
+6.1 Functional Tests
+
+1. Click hamburger → opens navigation drawer
+2. Click search → expands, shows recent searches
+3. Select transport mode → button highlights, map updates
+4. Start navigation → cluster collapses appropriately
+5. End navigation → returns to idle state
+
+6.2 Visual Tests
+
+1. Cluster stays top-left on all screen sizes
+2. Smooth transitions between states
+3. Proper z-index layering (above map, below modals)
+4. Dark theme consistency
+
+7. INTEGRATION POINTS
+
+7.1 Existing Components to Update
+
+1. WazeLikeSearch.tsx → Integrate into search bar dropdown
+2. TransitPlanner.tsx → Show in bottom sheet when transit mode selected
+3. RouteInfo.tsx → Show in bottom sheet during navigation
+4. BusinessList.tsx → Show in search results dropdown
+
+7.2 Business Layer Integration
+
+· Business search appears in dropdown
+· Selecting a business shows FlowerOfLife19 marker on map
+· Business details appear in bottom sheet
+
+8. DELIVERABLES FOR REPLIT AI
+
+1. Updated NavigatorMap.tsx with top-left cluster
+2. New TopLeftControlCluster.tsx component
+3. Updated navigationStore.ts with navigation state
+4. Updated CSS/Tailwind styles for new layout
+5. Updated integration with existing search and business components
+
+9. SUCCESS CRITERIA
+
+1. 1:1 Google Maps positioning (top-left)
+2. Smooth collapsing/expanding behavior
+3. Zero breaking changes to existing functionality
+4. All transport modes functional
+5. Search works for destinations, businesses, and transit stops
+6. Bottom sheet shows appropriate content based on context
+
+---
+
+IMPLEMENTATION NOTE FOR REPLIT AI:
+You have full context of the existing codebase. Use the current components (WazeLikeSearch, TransitPlanner, etc.) and integrate them into this new top-left cluster architecture. The goal is zero cognitive friction for users transitioning from Google Maps. Maintain all existing encryption, ZKP, and privacy features—this is purely a UI/UX restructuring.

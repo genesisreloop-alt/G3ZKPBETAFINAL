@@ -1,0 +1,17 @@
+
+1' On The Map Page For 2D Navigation ' The Search Functionality Needs To Update As The User Is Inputting The Adress FASTER {IT IS ACCUTE WHEN IT FINISHES ITS SEARCH BUT NOT FAST} Currentlyy It It Is Not Zeroing The Search In Fast Enough To Be In Line With The Adress The User Has Inputted ' Based On Their Location They Have Allowed SEARCH RESULTS IN THAT IMMEDIATE 10 ' 20 ' 30 ' 40 ' 50 etc. Mile Radius Should Be Advantaged e.g. I Shouldn't Get An Address In Zurich Pop Up In The Route Planner When I Enter 91 Billy Lows Lane Potters Bar
+  
+  a' The Navigation UI Is Crowded ' Make It Isomorphic To Waze with The Camera Going Down Into Streetview And A Feux'3D Navigation Of The Street That Has Them As An Arrow And Their Destination As The Flower Of Life {So The Pins That Are Dropped Are Not Square But Are The Flower Of Life Emblem We ALREADY HAVE} ' And Take Out The 3D Globe For Now As It Is Causing Too Many problems Just The REAL WAZE ISOMORPHISM FOR NAVIGATION
+
+2' The Mesh Page MUST BE THE LIST OF CHATS AND THE CONTACTS PAGE ' AND THE CHAT PAGE NEEDS TO BE WHAT THE MESH PAGE IS NOW ' AS THE CHAT PAGE IS CURRENTLY VAPORWARE NONSENSE ' The Mesh Page Needs To Have The Contacts List ' To Add A Contact There Are 3 Ways To Do So ; 1' By Adding Anothers Peer ID In The Mesh Tab MANUALLY Which Makes It Available For Them In The Chat Tab 2' Local Peer Discovery {Ascertain The Most Secure Way To Do This} So Anyone In A 100 Meter Radius Can Be Discovered JUST AS THEIR ENCRYPTED PEER ID HASH ' And A Request Can Be Sent By Users For Additions To Contacts Lists ' It Can Be Accepted Or Declined ' 3' From Mesh Groups The Same Requests As Said In Step 2 Can Be Sent And And The User  
+
+   a' The Voice Recorder That Is Currently On The Mesh Page Is Not Fully Visible And The Waveform Visualisation Needs To Be In REAL TIME AND IT ALSO NEEDS TO DISPLAY THE ACCUTE WAVEFORM THAT IS SENT IN THE MESSAGE THAT IS SENT AND When The Play Button Is Clicked/Pressed By A User On Said Voice Note ' It Must ACCUTELY REFLECT WHERE THE USER IS IN THE LISTENING OF SAID VOICE NOTE WITH SLIGHT VISUAL FEEDBACK
+
+   b' Take Out ALL OF Hebrew Letters From The MULTIVECTOR_ONTOLOGY_PALETTE And Rename The MULTIVECTOR_ONTOLOGY_PALETTE To The MULTIVECTOR_ONTOLOGY_OPCODES And Add MORE MORE MATHEMATICAL NOTATIONS THAT ARE VISUALLY APPEALING 
+
+3' For The Setting Page ENSURE THE UI OF THE SETTINGS PAGE STAYS THE SAME BUT THE THEMES ACTUALLY WORK AND CHANGE TO THE RELEVANT THEME AND ENSURE ALL BUTTONS ARE FULLY FUNCTIONAL ' NO PLACEHOLDER BUTTONS ' AND NO VAPORWARE BUTTONS 
+
+
+4' ENSURE THAT ON LOAD THE CHARACTERS THAT ARE IN TEH MATRIX RAIN COMPONENT ARE ONLY THE MATHEMATICAL NOTATIONS THAT ARE CURRENTLY IN THE MESH PAGE ' IT IS CRUCIAL THAT THEY ARE BRIGHTER AND IT IS ONLY THEM AND NOT "matrix code" MAKE THE CHARACTERS BRIGHTER AND ALL CHARACTERS IN THE MESH PAGE ' CHAT PAGE BRIGTER AS WELL
+
+5' You Need To FULLY Implement THE ACTUAL 3D ALGORITHM THAT IS THE PHIPI IMAGEAND OR VIDEO TO 3D TENSOR OBJECT 3D PIPELINE ' WHAT IS ATTATCHED IS A PLACEHOLDER PSEUDOCODE STUBBED SIMULACRA SIMULATION OF IT {And A dECREPITLY POOR ONE TOO} Navigate To The Attached Assets Folder And Integrate The Stores From There Into THe Zustand Store IN THE MAIN REAL APPLICATION And Ensure The 3D Tensor Object Pipeline PRODUCED RESULTS ISOMORPHIC TO THE ATTACHED ' Not SOLID COLOUR CUBES!

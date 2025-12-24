@@ -1,0 +1,502 @@
+G3ZKP Messenger: Complete UI/UX and Feature Implementation Specification
+
+For Replit AI Implementation
+
+1. PROJECT-WIDE RENAMING (Immediate Priority)
+
+1.1 Remove "T" from G3ZKP
+
+Files to Update:
+
+· package.json (name field: "g3zkp-messenger")
+· README.md and all documentation
+· All component imports and references
+· App.tsx, main.tsx, and all routing files
+· Environment variables and configuration files
+· Package names in packages/ directory
+
+1.2 UI Text Changes
+
+1. "GEODESIC CRYPTOGRAPHIC STATUS" → "CRYPTOGRAPHIC STATUS DASHBOARD"
+   · File: src/components/dashboard/CryptoStatusPanel.tsx
+   · Update: Title text, any CSS class names, component exports
+2. "MAXIMUM GEODESIC ENCRYPTION" → "MAXIMUM ENCRYPTION"
+   · File: src/pages/SettingsPage.tsx or settings component
+   · Update: Settings label, tooltips, and documentation
+
+2. MESH GROUPS & CHAT UI: WHATSAPP 1:1 MAPPING
+
+2.1 Current Problem Analysis
+
+The existing Mesh Groups implementation has:
+
+1. No back navigation from chat to chat list
+2. Two-column layout (chats + groups) collapses improperly
+3. Group admin features are non-functional placeholders
+4. Chat interface takes 50% screen space instead of adaptive sizing
+5. Cannot add peer IDs to groups
+
+2.2 WhatsApp Bijective Mapping Requirements
+
+2.2.1 Layout Structure
+
+```
+DESKTOP (≥768px):
+┌─────────────────────┬─────────────────────────────────┐
+│                     │                                 │
+│   CHATS LIST PANEL  │       ACTIVE CHAT PANEL        │
+│   (30% width)       │       (70% width)              │
+│                     │                                 │
+│  • Recent Chats     │  • Chat Header (Back on mobile)│
+│  • Group Chats      │  • Message List                │
+│  • Search Bar       │  • Message Input               │
+│  • Group Creation   │  • Media Attachments           │
+│                     │                                 │
+└─────────────────────┴─────────────────────────────────┘
+
+MOBILE (<768px):
+┌─────────────────────────────────┐
+│                                 │
+│   CHATS LIST (Default View)     │
+│                                 │
+│  [Back Button] Chat Name        │ ← Only when in chat
+│                                 │
+└─────────────────────────────────┘
+```
+
+2.2.2 Required Components to Create/Update
+
+File: src/pages/MeshPage.tsx - Complete Rewrite
+
+```typescript
+// Required Structure:
+const MeshPage = () => {
+  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  // Responsive layout switching
+  if (isMobile && activeChat) {
+    return <MobileChatView chatId={activeChat} onBack={() => setActiveChat(null)} />;
+  } else {
+    return <TwoColumnLayout onSelectChat={setActiveChat} activeChat={activeChat} />;
+  }
+};
+```
+
+Component 1: TwoColumnLayout.tsx
+
+· Left: ChatListPanel (30% width on desktop, 100% on mobile)
+· Right: ChatInterface (70% width on desktop, hidden on mobile)
+· Smooth transitions between states
+
+Component 2: ChatListPanel.tsx
+
+· Search bar at top
+· List of recent chats (individual and groups)
+· "New Chat" and "New Group" buttons
+· Online status indicators
+· Unread message badges
+
+Component 3: ChatInterface.tsx - WhatsApp Sizing
+
+· Header with: Back button (mobile), contact/group name, online status, call buttons, menu
+· Message list with: Timestamps, read receipts (optional), message status
+· Input area with: Text input, emoji picker, attachment button, voice message
+· Maximum height constraints for all elements
+
+2.2.3 Back Navigation Implementation
+
+Add to all chat views:
+
+```jsx
+// Mobile back button in chat header
+{isMobile && (
+  <button 
+    onClick={onBack}
+    className="p-2 mr-2 rounded-full hover:bg-gray-700"
+  >
+    ←
+  </button>
+)}
+```
+
+Update routing to maintain state:
+
+· Use URL parameters: /mesh/chat/:chatId
+· Browser back button should work
+· State preservation when switching chats
+
+2.3 Group Management: Full Implementation
+
+2.3.1 Current Gaps
+
+1. Cannot add peers to groups - placeholder UI only
+2. No admin permissions - all members equal
+3. No group settings - name, description, photo
+4. No moderation tools - remove members, ban users
+
+2.3.2 Required Group Features (WhatsApp Parity)
+
+Feature 1: Group Creation with Initial Members
+
+· Multi-select from contacts during creation
+· QR code invite generation
+· Link invite with expiration
+
+Feature 2: Group Admin Panel
+
+```typescript
+interface GroupAdminFeatures {
+  // Member Management
+  addMember: (peerId: string) => Promise<void>;
+  removeMember: (peerId: string) => Promise<void>;
+  promoteToAdmin: (peerId: string) => Promise<void>;
+  demoteFromAdmin: (peerId: string) => Promise<void>;
+  
+  // Group Settings
+  updateGroupName: (name: string) => Promise<void>;
+  updateGroupDescription: (description: string) => Promise<void>;
+  updateGroupPhoto: (photo: File) => Promise<void>;
+  setGroupPermissions: (permissions: GroupPermissions) => Promise<void>;
+  
+  // Moderation
+  banUser: (peerId: string, reason?: string) => Promise<void>;
+  muteUser: (peerId: string, duration: number) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  
+  // Invites
+  generateInviteLink: (expiresIn?: number) => Promise<string>;
+  revokeInviteLink: () => Promise<void>;
+}
+```
+
+Feature 3: Group Member List with Admin Controls
+
+· Visual distinction for admins vs members
+· Admin-only actions visible to admins
+· Permission-based UI rendering
+
+2.3.3 Implementation Files
+
+Create:
+
+1. src/components/chat/GroupAdminPanel.tsx - Full admin interface
+2. src/components/chat/GroupMemberManager.tsx - Add/remove members
+3. src/components/chat/GroupSettingsModal.tsx - Group configuration
+4. src/services/GroupManagementService.ts - Business logic
+
+Update:
+
+1. src/components/mesh/MeshGroups.tsx - Replace placeholder with actual implementation
+2. src/stores/contactStore.ts - Add group management state
+3. src/services/MessagingService.ts - Extend for group operations
+
+2.3.4 Database Schema Updates
+
+Extend IndexedDB schema for groups:
+
+```typescript
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  photoHash?: string;
+  createdBy: string; // Peer ID of creator
+  createdAt: Date;
+  members: Array<{
+    peerId: string;
+    joinedAt: Date;
+    role: 'admin' | 'member';
+    addedBy: string;
+  }>;
+  permissions: {
+    sendMessages: 'all' | 'admins';
+    addMembers: 'all' | 'admins';
+    changeGroupInfo: 'admins';
+  };
+  inviteLinks: Array<{
+    code: string;
+    createdBy: string;
+    createdAt: Date;
+    expiresAt?: Date;
+    uses: number;
+    maxUses?: number;
+  }>;
+}
+```
+
+2.4 Chat Interface Sizing Fixes
+
+2.4.1 Current Issues
+
+1. Chat panel takes 50% screen regardless of content
+2. No adaptive sizing based on viewport
+3. Input area too small for comfortable typing
+
+2.4.2 WhatsApp-Specific Dimensions
+
+Message Bubbles:
+
+· Max width: 65% of container on desktop
+· Min width: Fit content (with padding)
+· Padding: 8px 12px
+· Border radius: 18px (incoming), 18px (outgoing with tail)
+
+Input Area:
+
+· Height: 56px minimum (expands with multi-line)
+· Fixed position at bottom on mobile
+· Send button visible when text exists
+
+Message List:
+
+· Scrollable container with max-height constraints
+· Load more messages on scroll up
+· Date separators every 24h
+
+3. OPERATOR PROFILE PROPAGATION FIX
+
+3.1 Current Issue Analysis
+
+Operator name/picture changes only update in:
+
+· OperatorProfileTab.tsx
+  But NOT in:
+· Mesh Groups (created groups still show old name)
+· Chat headers
+· Contact lists
+· Business verification displays
+
+3.2 Solution: Centralized Profile State
+
+3.2.1 Create Global Operator Store
+
+File: src/stores/operatorStore.ts
+
+```typescript
+interface OperatorStore {
+  // Profile Data
+  name: string;
+  picture: string | null;
+  peerId: string;
+  
+  // Actions
+  updateProfile: (updates: { name?: string; picture?: string | null }) => Promise<void>;
+  getDisplayName: () => string;
+  getPictureUrl: () => string | null;
+  
+  // Sync across tabs/windows
+  syncProfile: () => Promise<void>;
+}
+
+// This store should:
+// 1. Persist to IndexedDB
+// 2. Broadcast changes to all open tabs (BroadcastChannel)
+// 3. Update all existing group memberships
+// 4. Update all active chat sessions
+```
+
+3.2.2 Profile Update Propagation
+
+Step 1: Update All Existing Groups
+
+```typescript
+// When profile changes, update all groups where operator is member
+const updateGroups = async (newName: string, newPicture: string | null) => {
+  const groups = await getAllGroups();
+  for (const group of groups) {
+    if (group.members.some(m => m.peerId === operatorPeerId)) {
+      await updateGroupMemberProfile(group.id, {
+        peerId: operatorPeerId,
+        displayName: newName,
+        picture: newPicture
+      });
+    }
+  }
+};
+```
+
+Step 2: Update Active Chats
+
+```typescript
+// Broadcast profile change to all active chat sessions
+const broadcastProfileUpdate = (updates) => {
+  messagingService.broadcast({
+    type: 'PROFILE_UPDATE',
+    payload: updates,
+    timestamp: Date.now(),
+    signature: await signProfileUpdate(updates)
+  });
+};
+```
+
+Step 3: Update UI Components
+Components that display operator info must:
+
+1. Subscribe to operatorStore changes
+2. Re-render when profile updates
+3. Fetch latest data on mount
+
+3.2.3 Files to Update
+
+Update these components to use operatorStore:
+
+1. src/components/chat/ChatHeader.tsx - Show operator name/picture in created groups
+2. src/components/mesh/MeshGroups.tsx - Group member lists
+3. src/components/contacts/ContactList.tsx - Self-contact entry
+4. src/components/business/BusinessRegistrationForm.tsx - Owner information
+5. Any component showing "You" or operator information
+
+Migration Script:
+Create a one-time migration to update all existing group data with current operator profile.
+
+4. CHAT TYPING EXPERIENCE FIX
+
+4.1 Current Problem
+
+When entering a Mesh Group chat:
+
+· Input field may be partially obscured
+· Keyboard on mobile covers input
+· No visual feedback for multi-line input
+
+4.2 WhatsApp-Like Typing Experience
+
+4.2.1 Input Field Behavior
+
+File: src/components/chat/MessageInput.tsx
+
+```typescript
+// Requirements:
+// 1. Auto-expand up to 4 lines, then scroll
+// 2. Maintain cursor position on re-render
+// 3. Auto-focus when entering chat
+// 4. Keyboard-aware positioning on mobile
+// 5. Send button appears/disappears based on content
+```
+
+4.2.2 Mobile Keyboard Handling
+
+```typescript
+// Use visual viewport API for mobile
+const adjustForKeyboard = () => {
+  if ('visualViewport' in window) {
+    window.visualViewport.addEventListener('resize', () => {
+      const messageList = document.getElementById('message-list');
+      if (messageList) {
+        messageList.scrollTop = messageList.scrollHeight;
+      }
+    });
+  }
+};
+```
+
+4.2.3 Input Accessibility
+
+· Tab index management
+· Screen reader announcements
+· Keyboard shortcuts (Ctrl+Enter to send)
+· Emoji picker keyboard navigation
+
+5. DEPLOYMENT READINESS CHECKLIST FOR THESE CHANGES
+
+5.1 Pre-Implementation Validation
+
+· Backup current IndexedDB data
+· Test on multiple viewport sizes (320px to 1920px)
+· Verify all existing chat data migrations
+· Check group encryption still works with new structure
+
+5.2 Implementation Order
+
+1. First: Create operatorStore.ts and migrate profile data
+2. Second: Update all components to use operatorStore
+3. Third: Implement WhatsApp layout in MeshPage.tsx
+4. Fourth: Build Group Admin features
+5. Fifth: Fix chat typing experience
+6. Sixth: Project-wide rename (G3ZKP → G3ZKP)
+7. Seventh: UI text changes (Geodesic → Cryptographic)
+
+5.3 Testing Requirements
+
+Functional Tests:
+
+· Operator name change propagates to all groups within 2 seconds
+· Back button works in mobile chat view
+· Group admin can add/remove members
+· Chat layout adapts to all screen sizes
+· All existing messages remain accessible
+
+Performance Tests:
+
+· Group with 100+ members loads in < 3 seconds
+· Profile update doesn't block UI
+· Memory usage stays under 100MB for 1000+ messages
+
+Security Tests:
+
+· Group admin permissions enforce correctly
+· Profile updates are cryptographically signed
+· No data leaks between operator profiles
+
+6. FILE REFERENCE FOR REPLIT AI
+
+6.1 Core Files to Modify
+
+```
+src/
+├── pages/
+│   └── MeshPage.tsx                    # COMPLETE REWRITE
+├── components/
+│   ├── chat/
+│   │   ├── ChatInterface.tsx           # UPDATE sizing and layout
+│   │   ├── ChatHeader.tsx              # ADD back button, use operatorStore
+│   │   ├── MessageInput.tsx            # FIX typing experience
+│   │   ├── GroupAdminPanel.tsx         # CREATE new
+│   │   ├── GroupMemberManager.tsx      # CREATE new
+│   │   └── GroupSettingsModal.tsx      # CREATE new
+│   ├── mesh/
+│   │   └── MeshGroups.tsx              # UPDATE with real implementation
+│   └── operator/
+│       └── OperatorProfileTab.tsx      # UPDATE to use operatorStore
+├── stores/
+│   ├── operatorStore.ts                # CREATE new
+│   └── contactStore.ts                 # UPDATE for group management
+└── services/
+    ├── GroupManagementService.ts       # CREATE new
+    └── MessagingService.ts             # EXTEND for group operations
+```
+
+6.2 Data Migration Files to Create
+
+```
+scripts/
+├── migrate-operator-profile.js         # Update existing groups with operator data
+├── backup-chat-data.js                 # Pre-implementation backup
+└── validate-migration.js               # Post-migration validation
+```
+
+7. SUCCESS CRITERIA
+
+1. Operator Profile: Name/picture changes update everywhere within 2 seconds
+2. Chat Navigation: Back button works flawlessly on mobile/desktop
+3. Group Management: Full admin functionality equivalent to WhatsApp
+4. UI Sizing: Exact 1:1 WhatsApp dimensions on all screen sizes
+5. Typing Experience: No keyboard overlap, comfortable multi-line input
+6. Performance: No regressions in chat loading or message sending
+7. Security: All group operations maintain end-to-end encryption
+8. Data Integrity: No loss of existing messages or contacts
+
+---
+
+IMPLEMENTATION INSTRUCTIONS FOR REPLIT AI:
+
+1. Start with operatorStore - This unblocks profile propagation
+2. Then fix MeshPage layout - Implement responsive two-column design
+3. Build group admin features - Replace all placeholders with real functionality
+4. Fix chat UX issues - Typing, navigation, sizing
+5. Execute renames - Project name and UI text changes
+6. Run migration scripts - Update existing data structures
+7. Test thoroughly - All success criteria must pass
+
+CRITICAL REQUIREMENT: All implementations must be fully functional, no stubs or placeholders. Every button must work, every feature must be complete. This is for production deployment.

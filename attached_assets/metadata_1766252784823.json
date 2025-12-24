@@ -1,0 +1,8 @@
+{
+  "name": "G3TZKP Messenger",
+  "description": "Genesis Grade 3 Tautological Zero-Knowledge Proof Messenger. Secure, decentralized communication with workflow optimization.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

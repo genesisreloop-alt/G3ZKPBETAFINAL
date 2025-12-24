@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>G3TZKP | Geodesic Meta-Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hologram-blue: #00f3ff;
+            --oak-green: #4caf50;
+            --deep-oak: #0a1a0a;
+            --matrix-bg: #010401;
+            --glass-cyan: rgba(0, 243, 255, 0.03);
+        }
+        body {
+            background-color: var(--matrix-bg);
+            color: var(--hologram-blue);
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            perspective: 1200px;
+            touch-action: manipulation;
+        }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        .geodesic-glass {
+            background: var(--glass-cyan);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            box-shadow: 
+                0 0 40px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(0, 243, 255, 0.05);
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
+            z-index: 1000;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        @keyframes rotorse-alpha {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.05); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        @keyframes rotorse-beta {
+            0% { transform: rotate(360deg) scale(1.1); }
+            50% { transform: rotate(180deg) scale(0.95); }
+            100% { transform: rotate(0deg) scale(1.1); }
+        }
+
+        @keyframes rotorse-tilt {
+            0%, 100% { transform: perspective(500px) rotateX(0deg); }
+            50% { transform: perspective(500px) rotateX(15deg); }
+        }
+
+        @keyframes load {
+            0% { left: -100%; width: 50%; }
+            50% { left: 0%; width: 100%; }
+            100% { left: 100%; width: 50%; }
+        }
+
+        .rotorse-container {
+            animation: rotorse-tilt 8s infinite ease-in-out;
+        }
+
+        .spatial-container {
+            transform-style: preserve-3d;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--oak-green); border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        
+        @media (max-width: 1024px) {
+            body { perspective: none; }
+            .geodesic-glass { transform: none !important; }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="root"></div>
+    <div class="crt-overlay"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

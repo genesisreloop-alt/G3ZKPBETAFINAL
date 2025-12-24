@@ -1,0 +1,19 @@
+{
+  "name": "g3zkp-circuits",
+  "version": "1.0.0",
+  "private": true,
+  "description": "G3ZKP Zero-Knowledge Proof Circuits",
+  "scripts": {
+    "build:circuits": "echo 'Circuit compilation requires circom installed'",
+    "setup": "mkdir -p build"
+  },
+  "devDependencies": {
+    "snarkjs": "^0.7.5"
+  },
+  "dependencies": {
+    "circom": "^0.5.46",
+    "circom2": "^0.2.22",
+    "circomlib": "^2.0.5",
+    "zkey-manager": "^0.1.2"
+  }
+}

@@ -1,0 +1,74 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+three.js?v=832e32c5:31006 WARNING: Multiple instances of Three.js being imported.
+(anonymous) @ three.js?v=832e32c5:31006Understand this warning
+themeStore.ts:186 [Theme] Applied theme: G3TZKP Object
+themeStore.ts:186 [Theme] Applied theme: G3TZKP Object
+themeStore.ts:186 [Theme] Applied theme: G3TZKP Object
+ZKPService.ts:28 [ZKPService] Using relative API paths
+TrafficService.ts:80 [TrafficService] Connected to traffic network
+ZKPService.ts:113 [ZKPService] Backend connected, mode: production
+socket__io-client.js?v=832e32c5:1061 Mixed Content: The page at 'https://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev/' was loaded over HTTPS, but attempted to connect to the insecure WebSocket endpoint 'ws://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev:3001/socket.io/?EIO=4&transport=websocket'. This request has been blocked; this endpoint must be available over WSS.
+createSocket @ socket__io-client.js?v=832e32c5:1061Understand this error
+ZKPService.ts:113 [ZKPService] Backend connected, mode: production
+socket__io-client.js?v=832e32c5:1061 Mixed Content: The page at 'https://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev/' was loaded over HTTPS, but attempted to connect to the insecure WebSocket endpoint 'ws://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev:3001/socket.io/?EIO=4&transport=websocket'. This request has been blocked; this endpoint must be available over WSS.
+createSocket @ socket__io-client.js?v=832e32c5:1061Understand this error
+2App.tsx:1075 Uncaught ReferenceError: Plane is not defined
+    at App (App.tsx:1075:47)
+    at renderWithHooks (chunk-R6BNZUD2.js?v=832e32c5:11568:26)
+    at updateFunctionComponent (chunk-R6BNZUD2.js?v=832e32c5:14602:28)
+    at beginWork (chunk-R6BNZUD2.js?v=832e32c5:15944:22)
+    at HTMLUnknownElement.callCallback2 (chunk-R6BNZUD2.js?v=832e32c5:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-R6BNZUD2.js?v=832e32c5:3699:24)
+    at invokeGuardedCallback (chunk-R6BNZUD2.js?v=832e32c5:3733:39)
+    at beginWork$1 (chunk-R6BNZUD2.js?v=832e32c5:19793:15)
+    at performUnitOfWork (chunk-R6BNZUD2.js?v=832e32c5:19226:20)
+    at workLoopSync (chunk-R6BNZUD2.js?v=832e32c5:19165:13)Understand this error
+chunk-AIORFR2G.js?v=832e32c5:61711 The above error occurred in the <App> component:
+
+    at App (https://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev/src/App.tsx?t=1766380443715:160:33)
+    at G3ZKPProvider (https://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev/src/contexts/G3ZKPContext.tsx:26:33)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+console.error @ chunk-AIORFR2G.js?v=832e32c5:61711Understand this error
+chunk-R6BNZUD2.js?v=832e32c5:19441 Uncaught ReferenceError: Plane is not defined
+    at App (App.tsx:1075:47)
+    at renderWithHooks (chunk-R6BNZUD2.js?v=832e32c5:11568:26)
+    at updateFunctionComponent (chunk-R6BNZUD2.js?v=832e32c5:14602:28)
+    at beginWork (chunk-R6BNZUD2.js?v=832e32c5:15944:22)
+    at beginWork$1 (chunk-R6BNZUD2.js?v=832e32c5:19781:22)
+    at performUnitOfWork (chunk-R6BNZUD2.js?v=832e32c5:19226:20)
+    at workLoopSync (chunk-R6BNZUD2.js?v=832e32c5:19165:13)
+    at renderRootSync (chunk-R6BNZUD2.js?v=832e32c5:19144:15)
+    at recoverFromConcurrentError (chunk-R6BNZUD2.js?v=832e32c5:18764:28)
+    at performConcurrentWorkOnRoot (chunk-R6BNZUD2.js?v=832e32c5:18712:30)Understand this error
+socket__io-client.js?v=832e32c5:1061 Mixed Content: The page at 'https://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev/' was loaded over HTTPS, but attempted to connect to the insecure WebSocket endpoint 'ws://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev:3001/socket.io/?EIO=4&transport=websocket'. This request has been blocked; this endpoint must be available over WSS.
+createSocket @ socket__io-client.js?v=832e32c5:1061
+doOpen @ socket__io-client.js?v=832e32c5:988
+open @ socket__io-client.js?v=832e32c5:505
+_open @ socket__io-client.js?v=832e32c5:1330
+_SocketWithoutUpgrade @ socket__io-client.js?v=832e32c5:1291
+SocketWithUpgrade @ socket__io-client.js?v=832e32c5:1635
+Socket @ socket__io-client.js?v=832e32c5:1761
+open @ socket__io-client.js?v=832e32c5:3127
+(anonymous) @ socket__io-client.js?v=832e32c5:3345
+setTimeout
+reconnect @ socket__io-client.js?v=832e32c5:3339
+maybeReconnectOnOpen @ socket__io-client.js?v=832e32c5:3114
+onError @ socket__io-client.js?v=832e32c5:3143
+(anonymous) @ socket__io-client.js?v=832e32c5:3151Understand this error
+socket__io-client.js?v=832e32c5:1061 Mixed Content: The page at 'https://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev/' was loaded over HTTPS, but attempted to connect to the insecure WebSocket endpoint 'ws://ee048460-1231-43eb-8efc-1a84509ff073-00-1gmdgo8idbk7l.spock.replit.dev:3001/socket.io/?EIO=4&transport=websocket'. This request has been blocked; this endpoint must be available over WSS.
+createSocket @ socket__io-client.js?v=832e32c5:1061
+doOpen @ socket__io-client.js?v=832e32c5:988
+open @ socket__io-client.js?v=832e32c5:505
+_open @ socket__io-client.js?v=832e32c5:1330
+_SocketWithoutUpgrade @ socket__io-client.js?v=832e32c5:1291
+SocketWithUpgrade @ socket__io-client.js?v=832e32c5:1635
+Socket @ socket__io-client.js?v=832e32c5:1761
+open @ socket__io-client.js?v=832e32c5:3127
+(anonymous) @ socket__io-client.js?v=832e32c5:3345
+setTimeout
+reconnect @ socket__io-client.js?v=832e32c5:3339
+maybeReconnectOnOpen @ socket__io-client.js?v=832e32c5:3114
+onError @ socket__io-client.js?v=832e32c5:3143
+(anonymous) @ socket__io-client.js?v=832e32c5:3151Understand this error

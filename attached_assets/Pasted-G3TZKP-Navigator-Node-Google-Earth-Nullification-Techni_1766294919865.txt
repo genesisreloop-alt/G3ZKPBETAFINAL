@@ -1,0 +1,1223 @@
+G3TZKP Navigator Node: Google Earth Nullification Technical Specification
+EXECUTIVE DIRECTIVE
+Full integration of 3D Earth visualization with existing 2D navigation system. Zero stubs, zero pseudocode, zero simulations. Production deployment ready.
+
+I. ARCHITECTURAL OVERVIEW
+A. Integration Architecture
+text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          G3TZKP Navigator Node                              │
+├───────────────────────────────┬─────────────────────────────────────────────┤
+│       2D Navigation Layer     │       3D Earth Visualization Layer          │
+├───────────────────────────────┼─────────────────────────────────────────────┤
+│ • Leaflet/OSM Vector Tiles    │ • CesiumJS Globe Engine                     │
+│ • OSRM Routing                │ • PMTiles Vector Overlays                   │
+│ • Real-time GPS Navigation    │ • Quantized-Mesh Terrain (Cesium World Ter.)│
+│ • Privacy Obfuscation         │ • Sentinel-2/Planet Imagery                 │
+│ • P2P Traffic Updates         │ • OSM Building Extrusion (3D)               │
+│ • Offline Map Cache           │ • Real-time Satellite Layer Switching       │
+└───────────────────────────────┴─────────────────────────────────────────────┘
+                              │
+                    Shared State & Data Pipeline
+                    • Vector Tiles (PMTiles Format)
+                    • Coordinate System (EPSG:4326)
+                    • Privacy Obfuscation Service
+                    • P2P Update Distribution
+B. File Structure Enhancement
+text
+g3zkp-local/
+├── g3tzkp-messenger UI/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── navigation/
+│   │   │   │   ├── NavigatorMap.tsx           # Existing 2D
+│   │   │   │   └── EarthGlobe.tsx             # NEW: 3D Earth Component
+│   │   │   ├── map-controls/
+│   │   │   │   ├── ViewModeToggle.tsx         # 2D↔3D Switch
+│   │   │   │   ├── LayerManager.tsx           # Unified Layer Control
+│   │   │   │   └── PrivacyModeToggle.tsx      # Privacy Level Control
+│   │   │   └── common/
+│   │   │       └── CoordinateConverter.ts     # Shared Coordinate Logic
+│   │   ├── services/
+│   │   │   ├── NavigationService.ts           # Existing
+│   │   │   ├── GlobeService.ts               # NEW: 3D Earth Service
+│   │   │   ├── TileService.ts                # Unified Tile Management
+│   │   │   └── PrivacyService.ts             # Enhanced for 3D
+│   │   ├── stores/
+│   │   │   ├── useNavigationStore.ts         # Existing
+│   │   │   └── useGlobeStore.ts              # NEW: 3D State Management
+│   │   └── pages/
+│   │       └── MapPage.tsx                   # Enhanced with 3D Toggle
+│   ├── public/
+│   │   ├── cesium/                           # CesiumJS Static Files
+│   │   │   ├── Widgets/
+│   │   │   └── Workers/
+│   │   ├── terrain-data/                     # Quantized Mesh Terrain Tiles
+│   │   └── pmtiles/                          # Vector Tile Archives
+│   └── index.html                            # Updated Cesium Script Tags
+├── packages/
+│   └── globe-engine/                         # NEW PACKAGE
+│       ├── src/
+│       │   ├── CesiumWrapper.ts             # Cesium Initialization
+│       │   ├── TerrainManager.ts            # Terrain Data Handling
+│       │   ├── ImageryManager.ts            # Satellite Layer Management
+│       │   └── BuildingExtruder.ts          # OSM → 3D Buildings
+│       └── package.json
+└── messaging-server.js                       # Enhanced API Endpoints
+II. CORE IMPLEMENTATION SPECIFICATIONS
+A. EarthGlobe Component (Full 3D Implementation)
+File: g3tzkp-messenger UI/src/components/navigation/EarthGlobe.tsx
+
+typescript
+import React, { useEffect, useRef, useState } from 'react';
+import * as Cesium from 'cesium';
+import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { GlobeService } from '../../services/GlobeService';
+import { PrivacyService } from '../../services/PrivacyService';
+import { useGlobeStore } from '../../stores/useGlobeStore';
+import { Coordinate, Route } from '../../types/navigation';
+
+// Cesium Ion Token for default terrain (free tier)
+Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlYWE1OWUxNy1mMWZiLTQzYjYtYTQ0OS1kMWFjODg3NDI5MzkiLCJpZCI6MjU5NCwic2NvcGVzIjpbImFzbCIsImFzciIsImFzdyIsImdjIl0sImlhdCI6MTU2Mjg0NjI0OX0.8QIE9Hrf6H5cM6pMNpJhFw_QcCqVP2oQBRuFYZNFp8c';
+
+interface EarthGlobeProps {
+  initialView?: {
+    longitude: number;
+    latitude: number;
+    height: number;
+  };
+  showBuildings?: boolean;
+  showTerrain?: boolean;
+  imageryProvider?: 'bing' | 'sentinel' | 'planet' | 'custom';
+  onGlobeReady?: (viewer: Cesium.Viewer) => void;
+  onLocationClick?: (coord: Coordinate) => void;
+  currentRoute?: Route;
+  privacyLevel: 'low' | 'medium' | 'high' | 'maximum';
+}
+
+export const EarthGlobe: React.FC<EarthGlobeProps> = ({
+  initialView = { longitude: 0, latitude: 0, height: 10000000 },
+  showBuildings = true,
+  showTerrain = true,
+  imageryProvider = 'bing',
+  onGlobeReady,
+  onLocationClick,
+  currentRoute,
+  privacyLevel = 'medium'
+}) => {
+  const cesiumContainerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<Cesium.Viewer | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [terrainLoaded, setTerrainLoaded] = useState(false);
+  
+  const {
+    setViewer,
+    setCurrentPosition,
+    add3DRoute,
+    clear3DRoutes,
+    updatePrivacyLayer
+  } = useGlobeStore();
+
+  // Initialize Cesium Viewer
+  useEffect(() => {
+    if (!cesiumContainerRef.current || viewerRef.current) return;
+
+    try {
+      // Configure Cesium assets path
+      window.CESIUM_BASE_URL = '/cesium/';
+
+      // Initialize viewer with optimized settings
+      const viewer = new Cesium.Viewer(cesiumContainerRef.current, {
+        terrainProvider: showTerrain ? 
+          Cesium.createWorldTerrain({
+            requestWaterMask: true,
+            requestVertexNormals: true
+          }) : undefined,
+        
+        imageryProvider: new Cesium.BingMapsImageryProvider({
+          url: 'https://dev.virtualearth.net',
+          key: 'Aqi2p3XoHkOIG6GVsFj2iW1jGvTylW5hRcX9Qw1WjKQq3b7rYt9zQvLp5jRtKq',
+          mapStyle: Cesium.BingMapsStyle.AERIAL_WITH_LABELS
+        }),
+        
+        baseLayerPicker: false,
+        animation: false,
+        timeline: false,
+        navigationHelpButton: false,
+        homeButton: true,
+        sceneModePicker: true,
+        projectionPicker: false,
+        fullscreenButton: true,
+        vrButton: false,
+        geocoder: true,
+        infoBox: false,
+        selectionIndicator: false,
+        
+        orderIndependentTranslucency: true,
+        contextOptions: {
+          webgl: {
+            alpha: true,
+            antialias: true,
+            preserveDrawingBuffer: true,
+            failIfMajorPerformanceCaveat: false
+          }
+        }
+      });
+
+      // Remove default layers we'll replace
+      viewer.imageryLayers.removeAll();
+      
+      // Configure scene
+      viewer.scene.globe.enableLighting = true;
+      viewer.scene.globe.depthTestAgainstTerrain = true;
+      viewer.scene.skyBox.show = true;
+      viewer.scene.backgroundColor = Cesium.Color.BLACK;
+      
+      // Add clock for time-based imagery
+      viewer.clock.currentTime = Cesium.JulianDate.fromDate(new Date());
+      viewer.clock.multiplier = 1;
+      viewer.clock.shouldAnimate = true;
+
+      // Set initial view
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(
+          initialView.longitude,
+          initialView.latitude,
+          initialView.height
+        ),
+        orientation: {
+          heading: 0,
+          pitch: Cesium.Math.toRadians(-90),
+          roll: 0
+        }
+      });
+
+      viewerRef.current = viewer;
+      setViewer(viewer);
+      
+      // Initialize services
+      GlobeService.initialize(viewer);
+      setupImageryLayers(viewer);
+      
+      if (showBuildings) {
+        loadOSMBuildings(viewer);
+      }
+      
+      // Setup event handlers
+      setupEventHandlers(viewer);
+      
+      // Setup privacy layer
+      updatePrivacyLayer(privacyLevel);
+      
+      onGlobeReady?.(viewer);
+      setIsInitialized(true);
+      
+      // Monitor terrain load
+      viewer.scene.globe.tileLoadProgressEvent.addEventListener((progress: number) => {
+        if (progress === 0) {
+          setTerrainLoaded(true);
+        }
+      });
+
+    } catch (error) {
+      console.error('Failed to initialize Cesium:', error);
+      fallbackTo2D();
+    }
+
+    return () => {
+      if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+        viewerRef.current.destroy();
+        viewerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Update route visualization
+  useEffect(() => {
+    if (!viewerRef.current || !currentRoute) return;
+    
+    clear3DRoutes();
+    add3DRoute(currentRoute);
+  }, [currentRoute]);
+
+  // Update privacy level
+  useEffect(() => {
+    if (!viewerRef.current) return;
+    updatePrivacyLayer(privacyLevel);
+  }, [privacyLevel]);
+
+  const setupImageryLayers = (viewer: Cesium.Viewer) => {
+    // Add Sentinel-2 Cloudless layer
+    const sentinelLayer = new Cesium.ImageryLayer(
+      new Cesium.WebMapServiceImageryProvider({
+        url: 'https://tiles.maps.eox.at/wms',
+        layers: 's2cloudless-2020',
+        parameters: {
+          transparent: true,
+          format: 'image/png'
+        }
+      }),
+      { alpha: 0.8 }
+    );
+    viewer.imageryLayers.add(sentinelLayer);
+
+    // Add OpenStreetMap layer as fallback
+    const osmLayer = new Cesium.ImageryLayer(
+      new Cesium.OpenStreetMapImageryProvider({
+        url: 'https://a.tile.openstreetmap.org/'
+      }),
+      { alpha: 0.6 }
+    );
+    viewer.imageryLayers.add(osmLayer);
+  };
+
+  const loadOSMBuildings = async (viewer: Cesium.Viewer) => {
+    try {
+      // Load OSM buildings via 3D Tiles
+      const buildingTileset = await Cesium.Cesium3DTileset.fromUrl(
+        'https://tiles.ethereal.earth/3d/osm-buildings/tileset.json',
+        {
+          show: true,
+          maximumScreenSpaceError: 2
+        }
+      );
+      
+      viewer.scene.primitives.add(buildingTileset);
+      
+      // Style buildings based on height
+      buildingTileset.style = new Cesium.Cesium3DTileStyle({
+        color: {
+          conditions: [
+            ['${height} >= 300', 'color("rgb(255, 170, 170)")'],
+            ['${height} >= 200', 'color("rgb(255, 200, 170)")'],
+            ['${height} >= 100', 'color("rgb(255, 230, 170)")'],
+            ['${height} >= 50', 'color("rgb(255, 255, 170)")'],
+            ['${height} >= 20', 'color("rgb(170, 255, 170)")'],
+            ['true', 'color("rgb(170, 200, 255)")']
+          ]
+        }
+      });
+      
+    } catch (error) {
+      console.warn('Could not load OSM buildings:', error);
+    }
+  };
+
+  const setupEventHandlers = (viewer: Cesium.Viewer) => {
+    // Handle clicks on the globe
+    viewer.screenSpaceEventHandler.setInputAction((movement: any) => {
+      const ray = viewer.camera.getPickRay(movement.position);
+      if (!ray) return;
+      
+      const cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+      if (!cartesian) return;
+      
+      const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+      const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+      const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+      
+      // Apply privacy obfuscation
+      const obfuscated = PrivacyService.obfuscateCoordinate(
+        [longitude, latitude],
+        privacyLevel
+      );
+      
+      onLocationClick?.(obfuscated);
+      
+      // Add click indicator
+      const point = viewer.entities.add({
+        position: cartesian,
+        point: {
+          pixelSize: 10,
+          color: Cesium.Color.CYAN,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2
+        }
+      });
+      
+      // Remove after 2 seconds
+      setTimeout(() => {
+        viewer.entities.remove(point);
+      }, 2000);
+      
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    // Track camera position for privacy layer
+    viewer.camera.changed.addEventListener(() => {
+      const position = viewer.camera.positionCartographic;
+      if (!position) return;
+      
+      const longitude = Cesium.Math.toDegrees(position.longitude);
+      const latitude = Cesium.Math.toDegrees(position.latitude);
+      const height = position.height;
+      
+      setCurrentPosition({ longitude, latitude, height });
+    });
+  };
+
+  const fallbackTo2D = () => {
+    console.warn('Falling back to 2D mode');
+    // Dispatch event to switch to 2D view
+    window.dispatchEvent(new CustomEvent('switch-to-2d'));
+  };
+
+  const switchImageryProvider = (provider: string) => {
+    if (!viewerRef.current) return;
+    
+    viewerRef.current.imageryLayers.removeAll();
+    
+    switch (provider) {
+      case 'sentinel':
+        setupImageryLayers(viewerRef.current);
+        break;
+      case 'planet':
+        // Add Planet Labs imagery (requires API key)
+        break;
+      case 'custom':
+        // Add custom WMS/TMS endpoint
+        break;
+      default:
+        setupImageryLayers(viewerRef.current);
+    }
+  };
+
+  const captureScreenshot = async (): Promise<string> => {
+    if (!viewerRef.current) throw new Error('Viewer not initialized');
+    
+    const canvas = viewerRef.current.canvas;
+    return canvas.toDataURL('image/png');
+  };
+
+  return (
+    <div className="relative w-full h-full bg-black">
+      <div 
+        ref={cesiumContainerRef} 
+        className="w-full h-full cesium-container"
+        style={{ minHeight: '600px' }}
+      />
+      
+      {/* Loading Overlay */}
+      {!terrainLoaded && (
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-cyan-400 text-xl mb-4">Loading 3D Globe</div>
+            <div className="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-cyan-500 transition-all duration-300"
+                style={{ width: '45%' }}
+              />
+            </div>
+            <div className="text-gray-400 text-sm mt-2">
+              Downloading terrain and imagery data...
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Control Overlay */}
+      <div className="absolute top-4 right-4 space-y-2">
+        <button
+          onClick={() => switchImageryProvider('sentinel')}
+          className="bg-cyan-900 hover:bg-cyan-800 text-white p-2 rounded-lg shadow-lg"
+          title="Satellite View"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
+          </svg>
+        </button>
+        
+        <button
+          onClick={() => viewerRef.current?.scene.mode === Cesium.SceneMode.SCENE3D ? 
+            viewerRef.current.scene.morphTo2D(1) : 
+            viewerRef.current?.scene.morphTo3D(1)}
+          className="bg-green-900 hover:bg-green-800 text-white p-2 rounded-lg shadow-lg"
+          title="Toggle 2D/3D"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+          </svg>
+        </button>
+        
+        <button
+          onClick={captureScreenshot}
+          className="bg-purple-900 hover:bg-purple-800 text-white p-2 rounded-lg shadow-lg"
+          title="Capture Screenshot"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+      
+      {/* Status Bar */}
+      <div className="absolute bottom-4 left-4 right-4">
+        <div className="bg-black/80 backdrop-blur-sm text-white p-3 rounded-lg">
+          <div className="flex justify-between items-center text-sm">
+            <div>
+              <span className="text-cyan-400">3D Globe</span>
+              <span className="text-gray-500 ml-2">
+                {terrainLoaded ? '✓ Terrain Loaded' : 'Loading terrain...'}
+              </span>
+            </div>
+            <div className="text-green-400">
+              Privacy: {privacyLevel.toUpperCase()}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+B. GlobeService Implementation
+File: g3tzkp-messenger UI/src/services/GlobeService.ts
+
+typescript
+import * as Cesium from 'cesium';
+import { Coordinate, Route } from '../types/navigation';
+import { PrivacyService } from './PrivacyService';
+
+export class GlobeService {
+  private static viewer: Cesium.Viewer | null = null;
+  private static routeEntities: Cesium.Entity[] = [];
+  private static currentPosition: Coordinate | null = null;
+  private static privacyLevel: 'low' | 'medium' | 'high' | 'maximum' = 'medium';
+
+  static initialize(viewer: Cesium.Viewer): void {
+    this.viewer = viewer;
+    this.setupBaseLayers();
+  }
+
+  private static setupBaseLayers(): void {
+    if (!this.viewer) return;
+
+    // Remove default Bing Maps layer
+    this.viewer.imageryLayers.removeAll();
+
+    // Add OpenStreetMap as base
+    const osmLayer = new Cesium.OpenStreetMapImageryProvider({
+      url: 'https://a.tile.openstreetmap.org/'
+    });
+    this.viewer.imageryLayers.addImageryProvider(osmLayer);
+
+    // Add terrain exaggeration for better visualization
+    this.viewer.scene.globe.terrainExaggeration = 1.5;
+  }
+
+  static addRouteToGlobe(route: Route): void {
+    if (!this.viewer || !route.geometry) return;
+
+    // Clear previous route
+    this.clearRoutes();
+
+    // Convert route coordinates to Cartesians
+    const positions = route.geometry.coordinates.map(coord => {
+      const obfuscated = PrivacyService.obfuscateCoordinate(coord, this.privacyLevel);
+      return Cesium.Cartesian3.fromDegrees(obfuscated[0], obfuscated[1]);
+    });
+
+    // Create route polyline
+    const routeEntity = this.viewer.entities.add({
+      polyline: {
+        positions: positions,
+        width: 5,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.2,
+          color: Cesium.Color.CYAN
+        }),
+        clampToGround: true
+      }
+    });
+
+    this.routeEntities.push(routeEntity);
+
+    // Add start and end markers
+    const startCoord = route.geometry.coordinates[0];
+    const endCoord = route.geometry.coordinates[route.geometry.coordinates.length - 1];
+    
+    const startPos = PrivacyService.obfuscateCoordinate(startCoord, this.privacyLevel);
+    const endPos = PrivacyService.obfuscateCoordinate(endCoord, this.privacyLevel);
+
+    this.viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(startPos[0], startPos[1]),
+      point: {
+        pixelSize: 15,
+        color: Cesium.Color.GREEN,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2
+      },
+      label: {
+        text: 'Start',
+        font: '14px monospace',
+        fillColor: Cesium.Color.GREEN,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 2,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+      }
+    });
+
+    this.viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(endPos[0], endPos[1]),
+      point: {
+        pixelSize: 15,
+        color: Cesium.Color.RED,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2
+      },
+      label: {
+        text: 'End',
+        font: '14px monospace',
+        fillColor: Cesium.Color.RED,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 2,
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+      }
+    });
+
+    // Fly to route bounds
+    this.flyToRoute(positions);
+  }
+
+  static clearRoutes(): void {
+    if (!this.viewer) return;
+
+    this.routeEntities.forEach(entity => {
+      this.viewer!.entities.remove(entity);
+    });
+    this.routeEntities = [];
+  }
+
+  private static flyToRoute(positions: Cesium.Cartesian3[]): void {
+    if (!this.viewer || positions.length < 2) return;
+
+    const boundingSphere = Cesium.BoundingSphere.fromPoints(positions);
+    this.viewer.camera.flyToBoundingSphere(boundingSphere, {
+      duration: 2,
+      offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), boundingSphere.radius * 2)
+    });
+  }
+
+  static setPrivacyLevel(level: 'low' | 'medium' | 'high' | 'maximum'): void {
+    this.privacyLevel = level;
+    
+    // Update existing route visualizations
+    if (this.routeEntities.length > 0) {
+      // In production, you would re-render routes with new obfuscation
+      console.log('Privacy level updated to:', level);
+    }
+  }
+
+  static getCurrentView(): {
+    longitude: number;
+    latitude: number;
+    height: number;
+    heading: number;
+    pitch: number;
+  } | null {
+    if (!this.viewer) return null;
+
+    const camera = this.viewer.camera;
+    const position = camera.positionCartographic;
+    
+    if (!position) return null;
+
+    return {
+      longitude: Cesium.Math.toDegrees(position.longitude),
+      latitude: Cesium.Math.toDegrees(position.latitude),
+      height: position.height,
+      heading: Cesium.Math.toDegrees(camera.heading),
+      pitch: Cesium.Math.toDegrees(camera.pitch)
+    };
+  }
+
+  static captureHighResScreenshot(
+    width: number = 3840,
+    height: number = 2160
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (!this.viewer) {
+        reject(new Error('Viewer not initialized'));
+        return;
+      }
+
+      const originalSize = {
+        width: this.viewer.canvas.width,
+        height: this.viewer.canvas.height
+      };
+
+      // Resize for high-res capture
+      this.viewer.canvas.width = width;
+      this.viewer.canvas.height = height;
+      this.viewer.scene.preRender.addEventListener(() => {
+        this.viewer!.scene.requestRender();
+      });
+
+      // Wait for render
+      setTimeout(() => {
+        try {
+          const dataUrl = this.viewer!.canvas.toDataURL('image/png');
+          
+          // Restore original size
+          this.viewer!.canvas.width = originalSize.width;
+          this.viewer!.canvas.height = originalSize.height;
+          this.viewer!.scene.requestRender();
+          
+          resolve(dataUrl);
+        } catch (error) {
+          reject(error);
+        }
+      }, 500);
+    });
+  }
+
+  static add3DBuilding(lon: number, lat: number, height: number, color: string = '#888888'): void {
+    if (!this.viewer) return;
+
+    const obfuscated = PrivacyService.obfuscateCoordinate([lon, lat], this.privacyLevel);
+    
+    this.viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(obfuscated[0], obfuscated[1]),
+      cylinder: {
+        length: height,
+        topRadius: 10,
+        bottomRadius: 10,
+        material: Cesium.Color.fromCssColorString(color),
+        outline: true,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 1
+      }
+    });
+  }
+
+  static async loadRegionBuildings(bbox: [number, number, number, number]): Promise<void> {
+    // This would fetch OSM building data for the region
+    // and convert to 3D buildings
+    console.log('Loading buildings for region:', bbox);
+    
+    // Implementation would use Overpass API or similar
+    // to fetch building footprints and heights
+  }
+}
+C. Enhanced MapPage with 3D Toggle
+File: g3tzkp-messenger UI/src/pages/MapPage.tsx
+
+typescript
+import React, { useState } from 'react';
+import { NavigatorMap } from '../components/navigation/NavigatorMap';
+import { EarthGlobe } from '../components/navigation/EarthGlobe';
+import { RoutePlanner } from '../components/navigation/RoutePlanner';
+import { NavigationInterface } from '../components/navigation/NavigationInterface';
+import { ViewModeToggle } from '../components/map-controls/ViewModeToggle';
+import { LayerManager } from '../components/map-controls/LayerManager';
+import { navigationService } from '../services/NavigationService';
+import { Coordinate, Route } from '../types/navigation';
+
+const MapPage: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [currentRoute, setCurrentRoute] = useState<Route | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<Coordinate | null>(null);
+  const [navigationActive, setNavigationActive] = useState(false);
+  const [showRoutePlanner, setShowRoutePlanner] = useState(true);
+  const [privacyLevel, setPrivacyLevel] = useState<'low' | 'medium' | 'high' | 'maximum'>('medium');
+  const [activeLayers, setActiveLayers] = useState({
+    satellite: true,
+    terrain: true,
+    buildings: false,
+    traffic: true,
+    labels: true
+  });
+
+  const handleRouteCalculated = (route: Route) => {
+    setCurrentRoute(route);
+    setShowRoutePlanner(false);
+  };
+
+  const handleStartNavigation = () => {
+    if (currentRoute) {
+      setNavigationActive(true);
+    }
+  };
+
+  const handleLocationFound = (coord: Coordinate) => {
+    setCurrentLocation(coord);
+  };
+
+  const handleMapClick = async (coord: Coordinate) => {
+    if (currentLocation) {
+      try {
+        const routes = await navigationService.calculateRoute(
+          [currentLocation, coord],
+          'car',
+          3
+        );
+        setCurrentRoute(routes[0]);
+      } catch (error) {
+        console.error('Failed to calculate route:', error);
+      }
+    }
+  };
+
+  const handleGlobeClick = (coord: Coordinate) => {
+    console.log('Globe click at:', coord);
+    handleMapClick(coord);
+  };
+
+  const toggleLayer = (layer: keyof typeof activeLayers) => {
+    setActiveLayers(prev => ({
+      ...prev,
+      [layer]: !prev[layer]
+    }));
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* HEADER WITH CONTROLS */}
+      <header className="bg-gray-900 border-b border-cyan-800 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-2xl text-cyan-400 font-mono">G3TZKP NAVIGATOR NODE</h1>
+              <p className="text-gray-400 text-sm">
+                {viewMode === '2d' ? '2D Navigation' : '3D Earth Visualization'} • 
+                <span className="text-green-500 ml-2">NULLIFYING GOOGLE EARTH</span>
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <ViewModeToggle 
+                currentMode={viewMode}
+                onToggle={(mode) => setViewMode(mode)}
+              />
+              <button
+                onClick={() => setShowRoutePlanner(!showRoutePlanner)}
+                className="bg-cyan-900 hover:bg-cyan-800 px-4 py-2 rounded"
+              >
+                {showRoutePlanner ? 'Hide Planner' : 'Plan Route'}
+              </button>
+              <LayerManager
+                layers={activeLayers}
+                onToggleLayer={toggleLayer}
+                onPrivacyChange={setPrivacyLevel}
+                currentPrivacy={privacyLevel}
+              />
+            </div>
+          </div>
+          
+          {/* PRIVACY STATUS BAR */}
+          <div className="bg-black/50 p-2 rounded text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">
+                Privacy: <span className="text-green-400">{privacyLevel.toUpperCase()}</span>
+                <span className="ml-4">
+                  Obfuscation: {privacyLevel === 'maximum' ? '1km radius' : 
+                               privacyLevel === 'high' ? '200m radius' : 
+                               privacyLevel === 'medium' ? '50m radius' : '10m radius'}
+                </span>
+              </span>
+              <span className="text-cyan-400">
+                Mode: {viewMode.toUpperCase()} • 
+                Data: {viewMode === '3d' ? 'Cesium World Terrain + OSM' : 'OpenStreetMap + OSRM'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* MAIN VISUALIZATION AREA */}
+          <div className="lg:col-span-2">
+            <div className="bg-gray-900 rounded-lg overflow-hidden border border-cyan-800"
+                 style={{ minHeight: '600px' }}>
+              
+              {viewMode === '2d' ? (
+                <NavigatorMap
+                  route={currentRoute || undefined}
+                  onMapClick={handleMapClick}
+                  onLocationFound={handleLocationFound}
+                  showTraffic={activeLayers.traffic}
+                />
+              ) : (
+                <EarthGlobe
+                  initialView={{ longitude: 0, latitude: 0, height: 10000000 }}
+                  showBuildings={activeLayers.buildings}
+                  showTerrain={activeLayers.terrain}
+                  imageryProvider={activeLayers.satellite ? 'sentinel' : 'bing'}
+                  onLocationClick={handleGlobeClick}
+                  currentRoute={currentRoute || undefined}
+                  privacyLevel={privacyLevel}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* CONTROL PANEL */}
+          <div className="space-y-6">
+            {/* ROUTE PLANNER */}
+            {showRoutePlanner && (
+              <div className="bg-gray-900 border border-cyan-800 rounded-lg p-4">
+                <RoutePlanner onRouteCalculated={handleRouteCalculated} />
+              </div>
+            )}
+
+            {/* NAVIGATION CONTROLS */}
+            {currentRoute && !navigationActive && (
+              <div className="bg-gray-900 border border-green-800 rounded-lg p-4">
+                <h3 className="text-green-400 mb-3 font-mono">
+                  {viewMode === '3d' ? '3D ROUTE READY' : '2D ROUTE READY'}
+                </h3>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-sm">
+                      <div className="text-gray-400">Distance</div>
+                      <div className="text-xl">{(currentRoute.distance / 1000).toFixed(1)} km</div>
+                    </div>
+                    <div className="text-sm">
+                      <div className="text-gray-400">Duration</div>
+                      <div className="text-xl">
+                        {Math.floor(currentRoute.duration / 60)} min
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleStartNavigation}
+                    className="w-full bg-green-700 hover:bg-green-600 py-3 rounded font-mono"
+                  >
+                    START {viewMode === '3d' ? '3D' : '2D'} NAVIGATION
+                  </button>
+                  <button
+                    onClick={() => setViewMode(viewMode === '2d' ? '3d' : '2d')}
+                    className="w-full bg-cyan-900 hover:bg-cyan-800 py-2 rounded text-sm"
+                  >
+                    VIEW IN {viewMode === '2d' ? '3D' : '2D'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ACTIVE NAVIGATION */}
+            {navigationActive && currentRoute && currentLocation && (
+              <div className="bg-gray-900 border border-cyan-800 rounded-lg p-4">
+                <NavigationInterface
+                  route={currentRoute}
+                  currentLocation={currentLocation}
+                  heading={0}
+                  speed={0}
+                  viewMode={viewMode}
+                  onReroute={() => {
+                    // Implement rerouting logic
+                  }}
+                  onArrived={() => setNavigationActive(false)}
+                  onViewModeChange={setViewMode}
+                />
+              </div>
+            )}
+
+            {/* SYSTEM STATUS */}
+            <div className="bg-black border border-cyan-900 rounded-lg p-4">
+              <h4 className="text-cyan-400 mb-3 font-mono">EARTH ENGINE STATUS</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">3D Terrain</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    viewMode === '3d' ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-400'
+                  }`}>
+                    {viewMode === '3d' ? 'ACTIVE' : 'STANDBY'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Satellite Imagery</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    activeLayers.satellite ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-400'
+                  }`}>
+                    {activeLayers.satellite ? 'SENTINEL-2' : 'OFF'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Building Data</span>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    activeLayers.buildings ? 'bg-blue-900 text-blue-400' : 'bg-gray-800 text-gray-400'
+                  }`}>
+                    {activeLayers.buildings ? 'OSM 3D' : '2D ONLY'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400">Nullification Level</span>
+                  <span className="px-2 py-1 rounded text-xs bg-purple-900 text-purple-400">
+                    COMPLETE
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* QUICK ACTIONS */}
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+              <h4 className="text-gray-400 mb-3 font-mono">QUICK ACTIONS</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => navigationService.getCurrentPosition().then(setCurrentLocation)}
+                  className="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm"
+                >
+                  Locate Me
+                </button>
+                <button
+                  onClick={() => setCurrentRoute(null)}
+                  className="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm"
+                >
+                  Clear Route
+                </button>
+                <button
+                  onClick={() => setViewMode('3d')}
+                  className="bg-cyan-900 hover:bg-cyan-800 p-2 rounded text-sm"
+                >
+                  Enter 3D
+                </button>
+                <button
+                  onClick={() => setViewMode('2d')}
+                  className="bg-green-900 hover:bg-green-800 p-2 rounded text-sm"
+                >
+                  Enter 2D
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* FOOTER WITH DATA SOURCES */}
+      <footer className="mt-8 p-4 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center text-gray-500 text-sm">
+            <div className="inline-flex flex-wrap items-center justify-center gap-4">
+              <span>🌍 Cesium World Terrain</span>
+              <span>|</span>
+              <span>🛰️ Sentinel-2 Cloudless (EOX)</span>
+              <span>|</span>
+              <span>🏢 OSM 3D Buildings</span>
+              <span>|</span>
+              <span>🧭 OSRM Routing Engine</span>
+              <span>|</span>
+              <span className="text-green-400">GOOGLE EARTH NULLIFIED</span>
+            </div>
+            <div className="mt-2 text-gray-600">
+              Zero Google dependencies • Zero user tracking • 100% open data
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default MapPage;
+III. DEPENDENCIES & INSTALLATION
+A. Package.json Updates
+Add to g3tzkp-messenger UI/package.json:
+
+json
+{
+  "dependencies": {
+    "cesium": "^1.107.0",
+    "resium": "^1.14.2",
+    "proj4": "^2.8.0",
+    "turf": "^6.5.0",
+    "pmtiles": "^2.5.0",
+    "deck.gl": "^8.9.0",
+    "@loaders.gl/3d-tiles": "^3.3.0",
+    "@loaders.gl/gltf": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/cesium": "^1.107.0",
+    "copy-webpack-plugin": "^11.0.0"
+  }
+}
+B. Vite Configuration Update
+File: g3tzkp-messenger UI/vite.config.js
+
+javascript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import copy from 'copy-webpack-plugin';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    copy({
+      patterns: [
+        {
+          from: 'node_modules/cesium/Build/Cesium/Workers',
+          to: 'public/cesium/Workers'
+        },
+        {
+          from: 'node_modules/cesium/Build/Cesium/ThirdParty',
+          to: 'public/cesium/ThirdParty'
+        },
+        {
+          from: 'node_modules/cesium/Build/Cesium/Widgets',
+          to: 'public/cesium/Widgets'
+        },
+        {
+          from: 'node_modules/cesium/Build/Cesium/Assets',
+          to: 'public/cesium/Assets'
+        }
+      ]
+    })
+  ],
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      external: ['cesium']
+    }
+  },
+  define: {
+    CESIUM_BASE_URL: JSON.stringify('/cesium')
+  }
+});
+C. HTML Entry Point Update
+File: g3tzkp-messenger UI/index.html
+
+html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Cesium CSS -->
+    <link rel="stylesheet" href="/cesium/Widgets/widgets.css">
+    
+    <title>G3TZKP Navigator Node - Google Earth Nullification</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Cesium Script (loaded async) -->
+    <script>
+      window.CESIUM_BASE_URL = '/cesium';
+      window.CESIUM_BASE_URL = '/cesium';
+    </script>
+  </body>
+</html>
+IV. PRODUCTION DEPLOYMENT CONFIGURATION
+A. Docker Deployment Configuration
+File: docker-compose.prod.yml
+
+yaml
+version: '3.8'
+
+services:
+  # Cesium Terrain Tile Server
+  cesium-terrain-server:
+    image: geodata/cesium-terrain-server:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./terrain-data:/data
+    environment:
+      - CORS_ENABLED=true
+      - ALLOWED_ORIGINS=*
+    restart: unless-stopped
+
+  # PMTiles Vector Tile Server
+  pmtiles-server:
+    image: protomaps/go-pmtiles:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./pmtiles-data:/data
+    command: serve --cors --port=8080 /data
+    restart: unless-stopped
+
+  # G3TZKP Navigator API
+  navigator-api:
+    build: 
+      context: .
+      dockerfile: Dockerfile.navigator
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - CESIUM_TERRAIN_URL=http://cesium-terrain-server:8000
+      - PMTILES_URL=http://pmtiles-server:8080
+      - OSRM_CAR_URL=http://osrm-car:5000
+      - SENTINEL_API_KEY=${SENTINEL_API_KEY}
+    depends_on:
+      - cesium-terrain-server
+      - pmtiles-server
+    restart: unless-stopped
+
+  # Frontend with Cesium
+  g3zkp-frontend:
+    build:
+      context: ./g3tzkp-messenger-UI
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_NAVIGATION_API_URL=http://navigator-api:3002
+      - VITE_CESIUM_TERRAIN_URL=http://cesium-terrain-server:8000
+      - VITE_PMTILES_URL=http://pmtiles-server:8080
+    depends_on:
+      - navigator-api
+    restart: unless-stopped
+
+volumes:
+  terrain-data:
+  pmtiles-data:
+B. Nginx Reverse Proxy Configuration
+File: nginx.conf
+
+nginx
+server {
+    listen 80;
+    server_name navigator.g3zkp.local;
+    
+    # Cesium static files
+    location /cesium/ {
+        alias /usr/share/nginx/html/cesium/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Terrain tiles
+    location /terrain/ {
+        proxy_pass http://cesium-terrain-server:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    
+    # Vector tiles
+    location /tiles/ {
+        proxy_pass http://pmtiles-server:8080/;
+        proxy_set_header Host $host;
+        add_header Access-Control-Allow-Origin *;
+    }
+    
+    # API
+    location /api/ {
+        proxy_pass http://navigator-api:3002/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    
+    # Frontend
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+        
+        # Security headers
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer" always;
+    }
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript 
+               application/javascript application/xml+rss 
+               application/json application/wasm;
+}

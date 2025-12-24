@@ -1,0 +1,67 @@
+G3° PHI-PI SUBSTRATE UPLINK: META-RECURSIVE TECHNICAL SPECIFICATION
+Project Integration: G3TZKP Messenger (Acute Reality Extension)
+Target Implementation: TensorObjectViewer.tsx & TensorConversionService.ts
+This specification defines the exact, production-ready implementation of the G3° PHI-PI SUBSTRATE ENGINE for integration into the G3TZKP Messenger protocol. This is an "Acute Reality" projection system where visual data is not simply rendered, but physically "sewn" into a volumetric substrate.
+I. CORE ARCHITECTURAL COMPONENTS
+The following files from the G3PHIPISUD codebase contain the logic for the "Asset to 3D" conversion. Replit AI must implement these as the production standard:
+components/AssetProcessor.tsx (The Uplink Bridge):
+Function: Converts raw MediaStream (Camera), Blob (Video), or File (Image) into high-performance THREE.VideoTexture or THREE.Texture.
+Critical Logic: Disposes of previous GPU memory immediately to prevent the "WebGL Context Lost" error. It provides the uVideoTexture and uHasVideo flags to the shader.
+components/PhiPiRaymarchingMaterial.ts (The Reality Engine - V7):
+Function: A custom ShaderMaterial executing a volumetric raymarching algorithm.
+Acute Projection Logic:
+Planar Accuracy: Strictly projects UVs based on the 
+ plane to prevent edge distortion.
+Luma-to-Depth Extrusion: Depth is calculated using the uEigenValue applied to pixel luma.
+RBBRRBR Stitching: A recursive bonding function that physically weaves the "Garment" (visual data) into the "Substrate" (the precursor floor).
+Invisible Boundary: The substrate boundary is mathematically present for collision/depth but visually clipped outside the asset UV range.
+components/PhiPiScene.tsx (The Manifold Renderer):
+Function: Sets up the React-Three-Fiber environment and the AssetManifold.
+Geometry: Uses a BoxGeometry as the raymarching volume. The box scale is dynamically matched to the asset's aspect ratio to ensure zero distortion.
+stores/usePhiPiStore.ts & types/phiPiTypes.ts:
+Function: Global state management for topological constants (
+ and 
+).
+II. ISOMORPHIC MAPPING FOR G3TZKP INTEGRATION
+To replace the "placeholder nonsense" in G3TZKP, Replit AI must map the G3PHIPISUD logic to the following G3TZKP components:
+G3PHIPISUD Component	G3TZKP Destination	Implementation Role
+AssetProcessor.tsx	MediaStorageService.ts	Handles the raw data-to-texture conversion pipeline.
+PhiPiRaymarchingMaterial.ts	TensorObjectViewer.tsx (Shader)	The core visual identity of the encrypted object.
+usePhiPiStore.ts	useTensorStore.ts	Manages the geometric constants of the message manifold.
+mathUtils.ts	TensorConversionService.ts	Provides the 
+ geodesic mapping functions.
+III. PRODUCTION-GRADE IMPLEMENTATION RULES (NO STUBS)
+1. The RBBRRBR Bonding Harmonic
+The "Stitching" logic must be implemented exactly as follows in the GLSL fragment shader:
+code
+Glsl
+float getStitch(float r, float z, float rotor, float substrate) {
+    float freq = (3.0 + uPhi) * 2.0 * (0.9 + 0.2 * rotor);
+    float sliceLayers = floor(abs(z) * 10.0 * uPhi);
+    float x = r * freq + z * uPi + substrate * uPhi + sliceLayers * 0.1;
+    float x7 = mod(x, 7.0);
+    // RBBRRBR Cycle
+    int idx = int(floor(x7));
+    float pulse = (idx == 0 || idx == 3 || idx == 4 || idx == 6) ? 1.0 : 0.2;
+    return pulse;
+}
+2. Anti-Distortion Manifold Scale
+The AssetManifold (Mesh) must calculate its scale based on the input texture's aspect ratio to ensure the image is never stretched:
+code
+TypeScript
+const aspect = texture.image.videoWidth / texture.image.videoHeight;
+mesh.scale.set(10 * aspect, 10, 1);
+3. GPU Memory Lifecycle
+To fix the WebGL Context Lost crash identified in the G3TZKP spec, the following cleanup must be used in TensorObjectViewer.tsx:
+code
+TypeScript
+useEffect(() => {
+  return () => {
+    material.dispose();
+    geometry.dispose();
+    if (texture) texture.dispose();
+    renderer.renderLists.dispose();
+  };
+}, [texture]);
+IV. REPLIT AI HANDOFF COMMAND
+"Replit AI: Implement the Acute Reality V7 Raymarching Engine into TensorObjectViewer.tsx. Use the PhiPiRaymarchingMaterial.ts logic as the source of truth for the shader. Ensure the AssetProcessor.tsx texture uplink is fully integrated into the MessagingService so that every image or camera feed in a chat is rendered as a 3D volumetric object physically sewn to a precursor substrate using the RBBRRBR pulse. DO NOT USE PLACEHOLDERS OR SIMULATIONS."

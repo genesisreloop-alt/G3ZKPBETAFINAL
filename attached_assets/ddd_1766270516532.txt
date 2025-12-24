@@ -1,0 +1,29 @@
+
+flowchart TD
+    A[Open a Chat with recipient] --> B[Locate & Activate<br>Attachment Button<br>**+ or 📎 icon**]
+    
+    B --> C{Choose Media Type}
+    
+    C -- Visual Media --> D[Select Gallery or Camera]
+    D --> E[Browse & Select<br>photo/video]
+    E --> F[**For Higher Quality**<br>Optional: Tap HD icon]
+    F --> G[Confirm & Send]
+    
+    C -- For Highest Quality --> H[Select **Document** Option]
+    H --> I[Browse Files & Select<br>photo/video file]
+    I --> J[Send as Uncompressed<br>Document]
+
+    Standard Method (Steps D-G): WhatsApp automatically compresses photos and videos to save data, which can reduce quality. A recent feature allows you to select an "HD" option before sending to preserve more detail.
+
+"Document" Method (Steps H-J): To send a photo or video in its original, uncompressed quality, you send it as a document. Instead of choosing "Gallery," you select the "Document" option from the attachment menu. You then navigate your phone's file system to select the image or video file. This bypasses all compression.
+
+Size Limits: For videos sent as media (not documents), there is a file size limit. While it can be up to 2GB, very large files may fail to send if the internet connection is weak.
+
+
+WhatsApp includes features specifically designed to make media accessible:
+
+Voice Messages: This is a core, accessible feature. Tap and hold the microphone icon next to the text field to record. You hear start and end tones. You can listen to received messages immediately.
+
+Voice Message Transcripts: For received voice messages, WhatsApp can generate a text transcript. Look for a "Transcript" option after playing a message. This is crucial if you are in a loud environment or if a message contains complex information.
+
+Image Descriptions (Beta): When someone sends you a photo, your screen reader may read a brief, automatically generated description of it, such as "May contain: sky, tree

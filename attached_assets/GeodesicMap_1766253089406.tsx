@@ -1,0 +1,81 @@
+
+import React, { useEffect, useState } from 'react';
+
+const GeodesicMap: React.FC = () => {
+  const [stars, setStars] = useState<{ id: string, x: number, y: number, size: number, opacity: number }[]>([]);
+
+  useEffect(() => {
+    const pts = [];
+    const count = 120;
+    for (let i = 0; i < count; i++) {
+      pts.push({
+        id: `S_${i}`,
+        x: (Math.random() - 0.5) * 1000,
+        y: (Math.random() - 0.5) * 1000,
+        size: Math.random() * 1.2 + 0.3,
+        opacity: Math.random() * 0.5 + 0.1
+      });
+    }
+    setStars(pts);
+  }, []);
+
+  return (
+    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+      <svg viewBox="-500 -500 1000 1000" className="w-full h-full">
+        {/* Orbital Matrix Rings - Razor Thin */}
+        {[0, 1, 2].map(i => (
+          <g key={i} className="animate-[spin_60s_linear_infinite]" style={{ animationDirection: i % 2 === 0 ? 'normal' : 'reverse', animationDuration: `${40 + i * 20}s` }}>
+            <ellipse 
+              cx="0" cy="0" rx={320 + i * 60} ry={140 + i * 25} 
+              fill="none" 
+              stroke="#00f3ff" 
+              strokeWidth="0.5" 
+              opacity={0.15 - i * 0.04} 
+              strokeDasharray="5, 20"
+            />
+            <ellipse 
+              cx="0" cy="0" rx={320 + i * 60} ry={140 + i * 25} 
+              fill="none" 
+              stroke="#4caf50" 
+              strokeWidth="0.5" 
+              opacity={0.08} 
+            />
+          </g>
+        ))}
+
+        {/* Matrix Nodes / Stars */}
+        {stars.map((star) => (
+          <circle 
+            key={star.id} 
+            cx={star.x} 
+            cy={star.y} 
+            r={star.size} 
+            fill={Math.random() > 0.5 ? "#00f3ff" : "#4caf50"} 
+            opacity={star.opacity} 
+            className="animate-pulse"
+            style={{ animationDelay: `${Math.random() * 5}s` }}
+          />
+        ))}
+
+        {/* Central Flower Core - Razor Thin */}
+        <g opacity="0.2">
+            <circle cx="0" cy="0" r="100" fill="none" stroke="#00f3ff" strokeWidth="0.3" />
+            {[0, 60, 120, 180, 240, 300].map(angle => (
+                <circle 
+                    key={angle} 
+                    cx={100 * Math.cos(angle * Math.PI / 180)} 
+                    cy={100 * Math.sin(angle * Math.PI / 180)} 
+                    r="100" 
+                    fill="none" 
+                    stroke="#4caf50" 
+                    strokeWidth="0.3" 
+                />
+            ))}
+        </g>
+      </svg>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+};
+
+export default GeodesicMap;

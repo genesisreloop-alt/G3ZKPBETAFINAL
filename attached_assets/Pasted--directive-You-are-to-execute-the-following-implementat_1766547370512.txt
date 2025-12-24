@@ -1,0 +1,92 @@
+{
+  "directive": "You are to execute the following implementation plan for the G3ZKP Messenger. You must NOT state intent or summarize. You must ONLY perform the coding and file modification tasks as specified, in sequence. After each 'Task', you must provide the 'Verification' output to prove completion. Begin with Task 0.",
+  "project_context": {
+    "project_name": "g3zkp-messenger",
+    "current_architecture": "Centralized Socket.IO relay server (messaging-server.js). No true P2P networking.",
+    "target_architecture": "Decentralized libp2p network with direct peer-to-peer connections.",
+    "core_principles": [
+      "Replace all centralized message relay with direct P2P transports (WebRTC/WebSockets).",
+      "Maintain the existing, excellent application-layer crypto (X3DH, Double Ratchet) for message payloads.",
+      "Add libp2p's transport-layer security (Noise) and routing (Gossipsub, DHT) to create a resilient mesh.",
+      "Prioritize user connectivity with Circuit Relaying to defeat firewalls/NATs."
+    ]
+  },
+  "implementation_plan": {
+    "phase_zero_prerequisite": {
+      "id": "TASK_0",
+      "description": "Analyze the current codebase structure as per the user's technical specification document to confirm file locations.",
+      "action": "Examine the repository. Identify the key files: 1) The main frontend service (`src/services/MessagingService.ts`). 2) The backend relay (`messaging-server.js`). 3) The package.json files. Output a simple list of these confirmed file paths.",
+      "verification": {
+        "type": "output",
+        "content": "CONFIRMED_FILE_PATHS: [list the paths you find]"
+      }
+    },
+    "phase_one_core_p2p_stack": {
+      "id": "TASK_1",
+      "description": "Install the foundational libp2p dependencies in the main UI project.",
+      "action": "In the `g3zkp-messenger UI/` directory, add the following dependencies to the `package.json` file. Update the `devDependencies` for types if needed.",
+      "dependencies_to_add": {
+        "@libp2p/webrtc": "^latest",
+        "@libp2p/websockets": "^latest",
+        "@libp2p/noise": "^latest",
+        "@chainsafe/libp2p-gossipsub": "^latest",
+        "@libp2p/bootstrap": "^latest",
+        "@libp2p/peer-id": "^latest",
+        "it-stream-types": "^latest"
+      },
+      "devDependencies_to_add": {
+        "@types/libp2p": "^latest"
+      },
+      "verification": {
+        "type": "code_block",
+        "content": "Show the updated `dependencies` and `devDependencies` sections of the `g3zkp-messenger UI/package.json` file."
+      }
+    },
+    "phase_two_create_libp2p_service": {
+      "id": "TASK_2",
+      "description": "Create the core LibP2PService to replace the centralized logic in MessagingService.ts.",
+      "action": "Create a new file at `src/services/LibP2PService.ts`. Implement a class `LibP2PService` with: 1) A `startNode` method that configures and starts a libp2p node with WebRTC, WebSockets, Noise, and Gossipsub. 2) A `sendDirectMessage(peerId, encryptedPayload)` method that opens a stream and sends data. 3) A `joinGroup(topic)` method that uses Gossipsub. Use the configuration template provided.",
+      "config_template": `
+        import { createLibp2p } from 'libp2p';
+        import { webRTC } from '@libp2p/webrtc';
+        import { webSockets } from '@libp2p/websockets';
+        import { noise } from '@libp2p/noise';
+        import { gossipsub } from '@chainsafe/libp2p-gossipsub';
+        import { bootstrap } from '@libp2p/bootstrap';
+
+        const node = await createLibp2p({
+          addresses: { listen: ['/webrtc'] },
+          transports: [webRTC(), webSockets()],
+          connectionEncryption: [noise()],
+          pubsub: gossipsub(),
+          peerDiscovery: [bootstrap({ list: ['/dns4/example.bootnode.com/tcp/443/wss/p2p/QmBootNodeId'] })],
+          // ... connection manager, etc.
+        });
+      `,
+      "verification": {
+        "type": "code_block",
+        "content": "Show the complete code for the `src/services/LibP2PService.ts` file you have created."
+      }
+    },
+    "phase_three_integrate_and_deprecate": {
+      "id": "TASK_3",
+      "description": "Modify the existing MessagingService to use the new LibP2PService for sending messages, breaking the dependency on the Socket.IO server.",
+      "action": "Edit the file `src/services/MessagingService.ts`. 1) Import the `LibP2PService`. 2) Locate the `sendMessage` function (or equivalent). 3) REPLACE its internal logic. Instead of calling `socket.emit('message:send', ...)`, it must: a) Get the instance of `LibP2PService`. b) Call `libp2pService.sendDirectMessage(recipientPeerId, encryptedMessagePayload)`. Leave the function signature and the existing encryption/decryption calls (to `CryptoService`) UNTOUCHED. We are only replacing the transport mechanism.",
+      "verification": {
+        "type": "code_block",
+        "content": "Show the diff or the updated `sendMessage` function within `src/services/MessagingService.ts`."
+      }
+    },
+    "phase_four_verification_test": {
+      "id": "TASK_4",
+      "description": "Create a simple, runnable test to verify that the libp2p node can start and that the modified MessagingService can be imported without errors.",
+      "action": "Create a test file at `src/test-libp2p-setup.ts`. Write code that: 1) Imports and instantiates `LibP2PService`. 2) Calls `startNode()`. 3) Logs the node's listening addresses and peer ID. This is a compile/import test, not a full network test.",
+      "verification": {
+        "type": "code_block",
+        "content": "Show the complete code for `src/test-libp2p-setup.ts`. Then, in a separate code block, show the SUCCESSFUL output of running `npx tsx src/test-libp2p-setup.ts` (or equivalent command to run the test). If it fails, show the error."
+      }
+    }
+  },
+  "success_criteria": "After TASK_4, the project must have: 1) New libp2p dependencies. 2) A working LibP2PService class. 3) A MessagingService whose `sendMessage` function uses the P2P service instead of Socket.IO. 4) A verification test that runs without import/instantiation errors.",
+  "final_command": "Now, begin execution with TASK_0. Do not describe what you will do. Do it and provide the verification output."
+}

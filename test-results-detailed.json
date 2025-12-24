@@ -1,0 +1,105 @@
+{
+  "timestamp": "2025-12-24T07:26:58.131Z",
+  "summary": {
+    "passed": 22,
+    "failed": 0,
+    "total": 22,
+    "successRate": 100
+  },
+  "tests": [
+    {
+      "name": "Health Endpoint",
+      "status": "PASSED"
+    },
+    {
+      "name": "ZKP Engine Status",
+      "status": "PASSED"
+    },
+    {
+      "name": "ZKP Circuits",
+      "status": "PASSED"
+    },
+    {
+      "name": "ZKP Proof Generation & Verification",
+      "status": "PASSED"
+    },
+    {
+      "name": "Navigation Routing",
+      "status": "PASSED"
+    },
+    {
+      "name": "Navigation Search",
+      "status": "PASSED"
+    },
+    {
+      "name": "Navigation Reverse Geocoding",
+      "status": "PASSED"
+    },
+    {
+      "name": "Transit Journey Planning",
+      "status": "PASSED"
+    },
+    {
+      "name": "European Transit Providers",
+      "status": "PASSED"
+    },
+    {
+      "name": "Business Verification",
+      "status": "PASSED"
+    },
+    {
+      "name": "Live Traffic Data",
+      "status": "PASSED"
+    },
+    {
+      "name": "Traffic Incidents",
+      "status": "PASSED"
+    },
+    {
+      "name": "Media Upload",
+      "status": "PASSED"
+    },
+    {
+      "name": "Voice Message Upload",
+      "status": "PASSED"
+    },
+    {
+      "name": "Device Synchronization",
+      "status": "PASSED"
+    },
+    {
+      "name": "Peer Management",
+      "status": "PASSED"
+    },
+    {
+      "name": "Message Storage",
+      "status": "PASSED"
+    },
+    {
+      "name": "WebRTC Signaling",
+      "status": "PASSED"
+    },
+    {
+      "name": "Voice Message Sending",
+      "status": "PASSED"
+    },
+    {
+      "name": "Video Call Signaling",
+      "status": "PASSED"
+    },
+    {
+      "name": "FaceTime-like UI",
+      "status": "PASSED"
+    },
+    {
+      "name": "Call Recording",
+      "status": "PASSED"
+    }
+  ],
+  "environment": {
+    "baseUrl": "http://localhost:3001",
+    "frontendUrl": "http://localhost:5001",
+    "nodeVersion": "v24.11.1",
+    "platform": "linux"
+  }
+}

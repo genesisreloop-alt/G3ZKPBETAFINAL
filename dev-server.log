@@ -1,0 +1,18 @@
+nohup: ignoring input
+
+> g3zkp-local@1.0.0 dev /workspaces/G3ZKPBETAFINAL
+> turbo run dev --parallel
+
+
+Attention:
+Turborepo now collects completely anonymous telemetry regarding usage.
+This information is used to shape the Turborepo roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://turbo.build/repo/docs/telemetry
+
+  x could not resolve workspaces: We detected multiple package managers in
+  | your repository: pnpm, npm. Please remove one of them.
+  `-> We detected multiple package managers in your repository: pnpm, npm.
+      Please remove one of them.
+
+ ELIFECYCLE  Command failed with exit code 1.
